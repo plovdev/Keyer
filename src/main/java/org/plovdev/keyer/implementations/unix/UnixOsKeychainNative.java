@@ -24,8 +24,8 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
  * secret service providers through the libsecret library.
  *
  * @author Anton
+ * @version 1.7
  * @since 1.5
- * @version 1.6
  */
 public final class UnixOsKeychainNative {
     private static final Logger log = LoggerFactory.getLogger(UnixOsKeychainNative.class);

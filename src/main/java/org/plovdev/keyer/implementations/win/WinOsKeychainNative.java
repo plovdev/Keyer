@@ -24,7 +24,7 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
  * generic credentials via CredReadW/CredWriteW/CredDeleteW functions.
  *
  * @author Anton
- * @version 1.6
+ * @version 1.7
  * @since 1.0
  */
 public final class WinOsKeychainNative {

@@ -7,7 +7,7 @@
     <groupId>io.github.anton-1488</groupId>
     <artifactId>Keyer</artifactId>
     <name>Keyer</name>
-    <version>1.6</version>
+    <version>1.7</version>
     <description>Keyer - Lightweight Native Keychain Access for Java</description>
     <url>https://github.com/anton-1488/Keyer</url>
 
@@ -48,7 +48,7 @@
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
             <version>${jspec.version}</version>
-            <scope>${jscep.scope}</scope>
+            <scope>${jspec.scope}</scope>
         </dependency>
 
         <!-- SLF4J Dependencies !-->
@@ -57,12 +57,8 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
 
+        <!-- JUnit Dependencies !-->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

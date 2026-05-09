@@ -23,7 +23,7 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
  *
  * @author Anton
  * @version 1.6
- * @since 1.0
+ * @since 1.7
  */
 public final class MacOsKeychainNative {
     private static final Logger log = LoggerFactory.getLogger(MacOsKeychainNative.class);

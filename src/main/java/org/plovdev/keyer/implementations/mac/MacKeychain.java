@@ -1,5 +1,6 @@
 package org.plovdev.keyer.implementations.mac;
 
+import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.Keychain;
 
 /**
@@ -8,9 +9,10 @@ import org.plovdev.keyer.Keychain;
  * This class serves as a thread-safe wrapper around {@link MacOsKeychainNative},
  * connecting the Java API to the Apple Security Framework.
  * </p>
+ *
  * @author Anton
+ * @version 1.7
  * @since 1.0
- * @version 1.6
  */
 public class MacKeychain implements Keychain {
     /**
@@ -19,6 +21,7 @@ public class MacKeychain implements Keychain {
     private static final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
 
     private final String appId;
+    private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
 
     public MacKeychain(String appId) {
         this.appId = appId;
@@ -47,5 +50,15 @@ public class MacKeychain implements Keychain {
     @Override
     public void deletePassword(String alias) {
         MAC_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
+    }
+
+    @Override
+    public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
+        this.authorizationMethod = method;
+    }
+
+    @Override
+    public AuthorizationMethod getAuthorizationMethod() {
+        return authorizationMethod;
     }
 }

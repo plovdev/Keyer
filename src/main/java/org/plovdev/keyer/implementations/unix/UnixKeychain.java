@@ -1,5 +1,6 @@
 package org.plovdev.keyer.implementations.unix;
 
+import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.Keychain;
 
 /**
@@ -8,8 +9,8 @@ import org.plovdev.keyer.Keychain;
  * Provides access to the system keychain via libsecret.
  *
  * @author Anton
- * @since 1.5
  * @version 1.6
+ * @since 1.5
  */
 public class UnixKeychain implements Keychain {
     /**
@@ -18,6 +19,7 @@ public class UnixKeychain implements Keychain {
     private static final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
 
     private final String appId;
+    private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
 
     /**
      * Constructs a UnixKeychain instance.
@@ -60,5 +62,15 @@ public class UnixKeychain implements Keychain {
     @Override
     public void deletePassword(String alias) {
         UNIX_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
+    }
+
+    @Override
+    public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
+        this.authorizationMethod = method;
+    }
+
+    @Override
+    public AuthorizationMethod getAuthorizationMethod() {
+        return authorizationMethod;
     }
 }

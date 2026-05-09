@@ -20,8 +20,8 @@ import org.plovdev.keyer.implementations.win.WindowsKeychain;
  * native calls without external dependencies.
  *
  * @author Anton
+ * @version 1.7
  * @since 1.0
- * @version 1.6
  */
 public interface Keychain {
     /**
@@ -74,4 +74,8 @@ public interface Keychain {
      * @param alias the name or account identifier of the password to remove.
      */
     void deletePassword(String alias);
+
+    void setAuthorizationMethod(AuthorizationMethod method);
+
+    AuthorizationMethod getAuthorizationMethod();
 }
