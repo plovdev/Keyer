@@ -77,9 +77,30 @@ public interface Keychain {
      */
     void deletePassword(String alias);
 
+    /**
+     * Sets the authorization method to be used for subsequent password saving operations.
+     * <p>
+     * The selected method will be applied during calls to {@link #setPassword(String, char[])}.
+     * Changing this method does not affect already existing entries in the keychain.
+     *
+     * @param method the desired {@link AuthorizationMethod} to be used
+     */
     void setAuthorizationMethod(AuthorizationMethod method);
 
+    /**
+     * Returns the authorization method currently active in this keychain instance.
+     *
+     * @return the current {@link AuthorizationMethod}
+     */
     AuthorizationMethod currentAuthorizationMethod();
 
+    /**
+     * Returns a set of authorization methods supported by the current platform.
+     * <p>
+     * The result depends on the operating system capabilities and available hardware.
+     * </p>
+     *
+     * @return an unmodifiable set of supported {@link AuthorizationMethod}s
+     */
     Set<AuthorizationMethod> supportedAuthMethods();
 }

@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleKeyerTest {
-    private static final String ALIAS = "wallet";
-    private static final String APP_ID = "MyApp";
+    private static final String APP_ID = "KeyerApp";
+    private static final String ALIAS = "Keyer";
 
     private final Keychain keychain = Keychain.getKeychain(APP_ID);
 

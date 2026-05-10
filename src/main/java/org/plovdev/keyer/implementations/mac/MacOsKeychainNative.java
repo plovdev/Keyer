@@ -3,17 +3,14 @@ package org.plovdev.keyer.implementations.mac;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.plovdev.keyer.AuthorizationMethod;
-import org.plovdev.keyer.exceptions.AccessDeniedException;
-import org.plovdev.keyer.exceptions.KeyerException;
-import org.plovdev.keyer.exceptions.KeyerStatusCode;
+import org.plovdev.keyer.exceptions.*;
 import org.plovdev.keyer.utils.NativeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 import static org.plovdev.keyer.utils.NativeUtils.find;
 import static org.plovdev.keyer.utils.NativeUtils.getConstant;
@@ -25,16 +22,16 @@ import static org.plovdev.keyer.utils.NativeUtils.getConstant;
  * CRUD operations on Generic Password items.
  *
  * @author Anton
- * @version 1.6
- * @since 1.7
+ * @since 1.6
+ * @version 1.7
  */
 public final class MacOsKeychainNative {
     private static final Logger log = LoggerFactory.getLogger(MacOsKeychainNative.class);
 
-    private static final String ADD_PASSWORD_METHOD_NAME = "SecKeychainAddGenericPassword";
-    private static final String GET_PASSWORD_METHOD_NAME = "SecKeychainFindGenericPassword";
-    private static final String DELETE_PASSWORD_METHOD_NAME = "SecKeychainItemDelete";
-    private static final String CLEAN_PASSWORD_METHOD_NAME = "SecKeychainItemFreeContent";
+    private static final String ADD_PASSWORD_METHOD_NAME = "SecItemAdd";
+    private static final String GET_PASSWORD_METHOD_NAME = "SecItemCopyMatching";
+    private static final String UPDATE_PASSWORD_METHOD_NAME = "SecItemUpdate";
+    private static final String DELETE_PASSWORD_METHOD_NAME = "SecItemDelete";
 
     private static final Arena SHARED = Arena.ofAuto();
     private static final Linker LINKER = Linker.nativeLinker();
@@ -44,23 +41,39 @@ public final class MacOsKeychainNative {
      */
     private static final SymbolLookup SECURITY = SymbolLookup.libraryLookup("/System/Library/Frameworks/Security.framework/Versions/A/Security", SHARED);
 
-    private static final MethodHandle ADD_PASSWORD = find(SECURITY, LINKER, ADD_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle UPDATE_PASSWORD = find(SECURITY, LINKER, "SecKeychainItemModifyAttributesAndData", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    private static final MethodHandle GET_PASSWORD = find(SECURITY, LINKER, GET_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle ADD_PASSWORD = find(SECURITY, LINKER, ADD_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle UPDATE_PASSWORD = find(SECURITY, LINKER, UPDATE_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle GET_PASSWORD = find(SECURITY, LINKER, GET_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle DELETE_PASSWORD = find(SECURITY, LINKER, DELETE_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    private static final MethodHandle CLEAN_PASSWORD = find(SECURITY, LINKER, CLEAN_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    private static final MethodHandle CF_DICT_CREATE = find(SECURITY, LINKER, "CFDictionaryCreate", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle CF_STR_CREATE = find(SECURITY, LINKER, "CFStringCreateWithCharacters", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+    private static final MethodHandle CF_DATA_CREATE = find(SECURITY, LINKER, "CFDataCreate", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+    private static final MethodHandle CF_DATA_GET_LENGTH = find(SECURITY, LINKER, "CFDataGetLength", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+    private static final MethodHandle CF_DATA_GET_BYTE_PTR = find(SECURITY, LINKER, "CFDataGetBytePtr", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle CF_RELEASE = find(SECURITY, LINKER, "CFRelease", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-    private static final MethodHandle SET_ACCESS_CONTROL = find(SECURITY, LINKER, "SecKeychainItemSetAccessControl", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    private static final MethodHandle ACCESS_CONTROL_CREATE = find(SECURITY, LINKER, "SecAccessControlCreateWithFlags", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+
+
+    private static final MemorySegment CLASS = getConstant(SECURITY, "kSecClass");
+    private static final MemorySegment CLASS_GENERIC_PASSWORD = getConstant(SECURITY, "kSecClassGenericPassword");
+    private static final MemorySegment ATTR_SERVICE = getConstant(SECURITY, "kSecAttrService");
+    private static final MemorySegment ATTR_ACCOUNT = getConstant(SECURITY, "kSecAttrAccount");
+    private static final MemorySegment VALUE_DATA = getConstant(SECURITY, "kSecValueData");
+    private static final MemorySegment RETURN_DATA = getConstant(SECURITY, "kSecReturnData");
+    private static final MemorySegment BOOLEAN_TRUE = getConstant(SECURITY, "kCFBooleanTrue");
 
     private static final MemorySegment ACCESSIBLE = getConstant(SECURITY, "kSecAttrAccessible");
     private static final MemorySegment ACCESSIBLE_ALWAYS = getConstant(SECURITY, "kSecAttrAccessibleAlways");
     private static final MemorySegment ACCESSIBLE_WHEN_UNLOCKED = getConstant(SECURITY, "kSecAttrAccessibleWhenUnlockedThisDeviceOnly");
     private static final MemorySegment ACCESS_CONTROL = getConstant(SECURITY, "kSecAttrAccessControl");
-    private static final MemorySegment USER_PRESENCE = getConstant(SECURITY, "kSecAccessControlUserPresence");
 
     //====ERROR CODES====\\
     private static final int SUCCESS = 0;
     private static final int NOT_FOUND = -25300;
+    private static final int AUTH_CANCELED = -128;
+    private static final int MISSING_ENTITLEMENT = -34018;
     private static final int ACCESS_DENIED = -25293;
     private static final int ACCESS_LOCKED = -25308;
 
@@ -78,31 +91,35 @@ public final class MacOsKeychainNative {
         Objects.requireNonNull(alias);
 
         try (var arena = Arena.ofConfined()) {
-            MemorySegment appSegment = arena.allocateFrom(app);
-            MemorySegment aliasSegment = arena.allocateFrom(alias);
-            MemorySegment lenPtr = arena.allocate(ValueLayout.JAVA_INT);
-            MemorySegment dataPtr = arena.allocate(ValueLayout.ADDRESS);
+            MemorySegment appStr = createCFString(arena, app);
+            MemorySegment aliasStr = createCFString(arena, alias);
+            MemorySegment[] keys = {CLASS, ATTR_SERVICE, ATTR_ACCOUNT, RETURN_DATA};
+            MemorySegment[] vals = {CLASS_GENERIC_PASSWORD, appStr, aliasStr, BOOLEAN_TRUE};
 
-            int status = (int) GET_PASSWORD.invokeExact(MemorySegment.NULL, (int) appSegment.byteSize() - 1, appSegment, (int) aliasSegment.byteSize() - 1, aliasSegment, lenPtr, dataPtr, MemorySegment.NULL);
+            MemorySegment queryDict = createDict(arena, keys, vals);
+            MemorySegment resultPtr = arena.allocate(ValueLayout.ADDRESS);
+
+            int status = (int) GET_PASSWORD.invokeExact(queryDict, resultPtr);
             log.debug("Password getting status: {}", status);
-
-            // error handling
             if (status == NOT_FOUND) return null;
             throwException(status);
 
-            MemorySegment passwordData = dataPtr.get(ValueLayout.ADDRESS, 0).reinterpret(lenPtr.get(ValueLayout.JAVA_INT, 0));
-            byte[] bytes = passwordData.toArray(ValueLayout.JAVA_BYTE);
+            MemorySegment cfData = resultPtr.get(ValueLayout.ADDRESS, 0);
+            long length = (long) CF_DATA_GET_LENGTH.invokeExact(cfData);
+            MemorySegment bytePtr = (MemorySegment) CF_DATA_GET_BYTE_PTR.invokeExact(cfData);
+
+            byte[] bytes = bytePtr.reinterpret(length).toArray(ValueLayout.JAVA_BYTE);
             char[] password = NativeUtils.bytesToCharsUTF_8(bytes);
 
-            int cleanStatus = (int) CLEAN_PASSWORD.invokeExact(MemorySegment.NULL, passwordData);
-            if (cleanStatus != SUCCESS) {
-                log.warn("CredFree returned non-zero status: {}", cleanStatus);
-            }
-
+            executeClear(cfData, appStr, aliasStr, queryDict);
             Arrays.fill(bytes, (byte) 0);
             return password;
         } catch (Throwable t) {
-            throw new KeyerException("Error to get password", t);
+            if (t instanceof KeyerException ke) {
+                throw ke;
+            } else {
+                throw new KeyerException("Error to get password", t);
+            }
         }
     }
 
@@ -122,39 +139,51 @@ public final class MacOsKeychainNative {
 
         byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
         try (var arena = Arena.ofConfined()) {
-            var appSegment = arena.allocateFrom(app);
-            var aliasSegment = arena.allocateFrom(alias);
-            var passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, passBytes);
-            var itemRefPtr = arena.allocate(ValueLayout.ADDRESS);
+            MemorySegment appStr = createCFString(arena, app);
+            MemorySegment aliasStr = createCFString(arena, alias);
+            MemorySegment passBlob = (passBytes.length > 0) ? arena.allocateFrom(ValueLayout.JAVA_BYTE, passBytes) : MemorySegment.NULL;
+            MemorySegment passData = (MemorySegment) CF_DATA_CREATE.invokeExact(MemorySegment.NULL, passBlob, (long) passBytes.length);
 
-            int findStatus = (int) GET_PASSWORD.invokeExact(MemorySegment.NULL, (int) appSegment.byteSize() - 1, appSegment, (int) aliasSegment.byteSize() - 1, aliasSegment, MemorySegment.NULL, MemorySegment.NULL, itemRefPtr);
-            MemorySegment itemRef = null;
-            int status;
+            MemorySegment[] queryKeys = {CLASS, ATTR_SERVICE, ATTR_ACCOUNT};
+            MemorySegment[] queryVals = {CLASS_GENERIC_PASSWORD, appStr, aliasStr};
+            MemorySegment queryDict = createDict(arena, queryKeys, queryVals);
 
-            MemorySegment accessibility = ACCESSIBLE_WHEN_UNLOCKED;
-            MemorySegment accessControl = MemorySegment.NULL;
-            switch (method) {
-                case NONE -> accessibility = ACCESSIBLE_ALWAYS;
-                case BIOMETRY -> accessControl = createAccessControl(arena);
+            List<MemorySegment> upKeys = new ArrayList<>();
+            List<MemorySegment> upVals = new ArrayList<>();
+            upKeys.add(VALUE_DATA);
+            upVals.add(passData);
+
+            if (method == AuthorizationMethod.BIOMETRY) {
+                upKeys.add(ACCESS_CONTROL);
+                upVals.add(MacAuthHelper.createAccessControl(arena, ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED));
+            } else {
+                upKeys.add(ACCESSIBLE);
+                upVals.add((method == AuthorizationMethod.NONE) ? ACCESSIBLE_ALWAYS : ACCESSIBLE_WHEN_UNLOCKED);
             }
 
-            try {
-                if (findStatus == SUCCESS) {
-                    itemRef = itemRefPtr.get(ValueLayout.ADDRESS, 0);
-                    status = (int) UPDATE_PASSWORD.invokeExact(itemRef, MemorySegment.NULL, passBytes.length, passwordSegment);
-                } else if (findStatus == NOT_FOUND) {
-                    status = (int) ADD_PASSWORD.invokeExact(MemorySegment.NULL, (int) appSegment.byteSize() - 1, appSegment, (int) aliasSegment.byteSize() - 1, aliasSegment, passBytes.length, passwordSegment, MemorySegment.NULL);
-                } else {
-                    throw new KeyerException("Find failed: " + findStatus);
-                }
-                throwException(status);
-            } finally {
-                if (itemRef != null && itemRef.address() != 0) {
-                    CF_RELEASE.invokeExact(itemRef);
-                }
+            MemorySegment updateDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));
+            int status = (int) UPDATE_PASSWORD.invokeExact(queryDict, updateDict);
+
+            if (status == NOT_FOUND) {
+                upKeys.add(CLASS);
+                upVals.add(CLASS_GENERIC_PASSWORD);
+                upKeys.add(ATTR_SERVICE);
+                upVals.add(appStr);
+                upKeys.add(ATTR_ACCOUNT);
+                upVals.add(aliasStr);
+                MemorySegment addDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));
+                status = (int) ADD_PASSWORD.invokeExact(addDict, MemorySegment.NULL);
+                CF_RELEASE.invokeExact(addDict);
             }
+
+            executeClear(appStr, aliasStr, passData, queryDict, updateDict);
+            throwException(status);
         } catch (Throwable t) {
-            throw new KeyerException("Can't set password", t);
+            if (t instanceof KeyerException ke) {
+                throw ke;
+            } else {
+                throw new KeyerException("Can't set password", t);
+            }
         } finally {
             Arrays.fill(passBytes, (byte) 0);
         }
@@ -172,24 +201,31 @@ public final class MacOsKeychainNative {
         Objects.requireNonNull(alias);
 
         try (var arena = Arena.ofConfined()) {
-            var appSegment = arena.allocateFrom(app);
-            var aliasSegment = arena.allocateFrom(alias);
-            var itemRefPtr = arena.allocate(ValueLayout.ADDRESS);
+            MemorySegment appStr = createCFString(arena, app);
+            MemorySegment aliasStr = createCFString(arena, alias);
 
-            int status = (int) GET_PASSWORD.invokeExact(MemorySegment.NULL, (int) appSegment.byteSize() - 1, appSegment, (int) aliasSegment.byteSize() - 1, aliasSegment, MemorySegment.NULL, MemorySegment.NULL, itemRefPtr);
-            if (status == NOT_FOUND) return;
-            if (status != SUCCESS) throwException(status);
+            MemorySegment[] keys = {CLASS, ATTR_SERVICE, ATTR_ACCOUNT};
+            MemorySegment[] vals = {CLASS_GENERIC_PASSWORD, appStr, aliasStr};
+            MemorySegment queryDict = createDict(arena, keys, vals);
 
-            MemorySegment itemRef = itemRefPtr.get(ValueLayout.ADDRESS, 0);
-            try {
-                int delStatus = (int) DELETE_PASSWORD.invokeExact(itemRef);
-                throwException(delStatus);
-            } finally {
-                CF_RELEASE.invokeExact(itemRef);
+            int status = (int) DELETE_PASSWORD.invokeExact(queryDict);
+            log.debug("Password deletion status: {}", status);
+
+            executeClear(appStr, aliasStr, queryDict);
+            if (status != SUCCESS && status != NOT_FOUND) {
+                throwException(status);
             }
         } catch (Throwable t) {
-            throw new KeyerException("Error to delete password", t);
+            if (t instanceof KeyerException ke) {
+                throw ke;
+            } else {
+                throw new KeyerException("Error to delete password", t);
+            }
         }
+    }
+
+    public @NonNull Set<AuthorizationMethod> getAvailAuthMethods() {
+        return MacAuthHelper.supportedAuthMethods(ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED);
     }
 
     /**
@@ -201,26 +237,43 @@ public final class MacOsKeychainNative {
         switch (status) {
             case SUCCESS, NOT_FOUND:
                 break;
+            case AUTH_CANCELED:
+                throw new AuthenticationCanceledException(KeyerStatusCode.AUTH_CANCELED);
+            case MISSING_ENTITLEMENT:
+                throw new MissingEntitlement(KeyerStatusCode.MISSING_ENTITLEMENT);
             case ACCESS_DENIED:
                 throw new AccessDeniedException(KeyerStatusCode.ACCESS_DENIED);
             case ACCESS_LOCKED:
                 throw new AccessDeniedException(KeyerStatusCode.ACCESS_LOCKED);
             default:
-                throw new KeyerException(String.format("Failed to get password (Code: %d)", status));
+                throw new KeyerException(String.format("Keyer operation failed (Code: %d)", status));
         }
     }
 
-    private @NonNull MemorySegment createAccessControl(@NonNull Arena arena) throws Throwable {
-        var errorPtr = arena.allocate(ValueLayout.ADDRESS);
-        MemorySegment result = (MemorySegment) SET_ACCESS_CONTROL.invokeExact(
-                MemorySegment.NULL,
-                ACCESSIBLE_WHEN_UNLOCKED,
-                2L,
-                errorPtr
-        );
-        if (result.address() == 0) {
-            throw new RuntimeException("Failed to create AccessControl");
+    private @NonNull MemorySegment createCFString(@NonNull Arena arena, @NonNull String str) throws Throwable {
+        MemorySegment chars = arena.allocateFrom(ValueLayout.JAVA_CHAR, str.toCharArray());
+        MemorySegment ref = (MemorySegment) CF_STR_CREATE.invokeExact(MemorySegment.NULL, chars, (long) str.length());
+        if (ref.address() == 0) throw new KeyerException("Failed to create CFString");
+        return ref;
+    }
+
+    private MemorySegment createDict(@NonNull Arena arena, MemorySegment @NonNull [] keys, MemorySegment @NonNull [] values) throws Throwable {
+        var keysPtr = arena.allocate(ValueLayout.ADDRESS, keys.length);
+        var valsPtr = arena.allocate(ValueLayout.ADDRESS, values.length);
+        for (int i = 0; i < keys.length; i++) {
+            keysPtr.setAtIndex(ValueLayout.ADDRESS, i, keys[i]);
+            valsPtr.setAtIndex(ValueLayout.ADDRESS, i, values[i]);
         }
-        return result;
+        return (MemorySegment) CF_DICT_CREATE.invokeExact(MemorySegment.NULL, keysPtr, valsPtr, (long) keys.length, MemorySegment.NULL, MemorySegment.NULL);
+    }
+
+    private void executeClear(MemorySegment... toClear) {
+        Arrays.stream(toClear).forEach(segment -> {
+            try {
+                CF_RELEASE.invokeExact(segment);
+            } catch (Throwable e) {
+                log.error("Error clear object: ", e);
+            }
+        });
     }
 }

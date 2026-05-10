@@ -20,10 +20,10 @@ public class MacKeychain implements Keychain {
     /**
      * Native bridge for Project Panama calls.
      */
-    private static final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
+    private final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
 
     private final String appId;
-    private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
+    private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.PASSWORD;
 
     public MacKeychain(String appId) {
         this.appId = appId;
@@ -54,18 +54,27 @@ public class MacKeychain implements Keychain {
         MAC_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
         this.authorizationMethod = method;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AuthorizationMethod currentAuthorizationMethod() {
         return authorizationMethod;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
-        return Set.of();
+        return MAC_OS_KEYCHAIN_NATIVE.getAvailAuthMethods();
     }
 }

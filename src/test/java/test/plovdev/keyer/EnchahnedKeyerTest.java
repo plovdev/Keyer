@@ -1,17 +1,14 @@
 package test.plovdev.keyer;
 
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.plovdev.keyer.Keychain;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EnchahnedKeyerTest {
-    private static final String ALIAS = "wallet";
-    private static final String APP_ID = "MyApp";
+    private static final String APP_ID = "KeyerApp";
+    private static final String ALIAS = "Keyer";
 
     private static final Keychain keychain = Keychain.getKeychain(APP_ID);
 
@@ -45,5 +42,10 @@ public class EnchahnedKeyerTest {
     @Test
     void testDeleteNonExistent() {
         assertDoesNotThrow(() -> keychain.deletePassword(ALIAS));
+    }
+
+    @AfterAll
+    static void cleanup() {
+        keychain.deletePassword(ALIAS);
     }
 }

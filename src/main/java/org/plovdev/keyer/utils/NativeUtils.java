@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
  * primarily focused on character encoding conversions and native function linking.
  *
  * @author Anton
- * @version 1.6
+ * @version 1.7
  * @since 1.0
  */
 public final class NativeUtils {
@@ -73,13 +73,20 @@ public final class NativeUtils {
      * @param name native function name
      * @param desc function signature descriptor
      * @return linked MethodHandle
-     * @throws java.util.NoSuchElementException if the symbol is not found
+     * @throws NoSuchElementException if the function not found
      */
     public static @NonNull MethodHandle find(@NonNull SymbolLookup lookup, Linker linker, String name, FunctionDescriptor desc) {
-        return lookup.find(name).map(s -> linker.downcallHandle(s, desc)).orElseThrow();
+        return lookup.find(name).map(s -> linker.downcallHandle(s, desc)).orElseThrow(() -> new NoSuchElementException("Function not found: " + name));
     }
 
+    /**
+     * Finds a native constant by name.
+     *
+     * @param name native constant name
+     * @return native constant in MemorySegment
+     * @throws NoSuchElementException if the constant not found
+     */
     public static MemorySegment getConstant(@NonNull SymbolLookup lookup, String name) {
-        return lookup.find(name).orElseThrow(() -> new NoSuchElementException("Symbol not found: " + name)).get(ValueLayout.ADDRESS, 0);
+        return lookup.find(name).orElseThrow(() -> new NoSuchElementException("Constant not found: " + name)).reinterpret(8).get(ValueLayout.ADDRESS, 0);
     }
 }

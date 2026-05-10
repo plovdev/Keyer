@@ -4,8 +4,8 @@ package org.plovdev.keyer;
  * Supported operating system platforms for native keychain access.
  *
  * @author Anton
- * @since 1.0
  * @version 1.6
+ * @since 1.0
  */
 public enum Platform {
     /**

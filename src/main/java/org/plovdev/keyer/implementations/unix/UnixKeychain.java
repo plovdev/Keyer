@@ -11,14 +11,14 @@ import java.util.Set;
  * Provides access to the system keychain via libsecret.
  *
  * @author Anton
- * @version 1.6
+ * @version 1.7
  * @since 1.5
  */
 public class UnixKeychain implements Keychain {
     /**
      * Native bridge for Project Panama calls.
      */
-    private static final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
+    private final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
 
     private final String appId;
     private final AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
@@ -34,8 +34,6 @@ public class UnixKeychain implements Keychain {
 
     /**
      * {@inheritDoc}
-     * <p>
-     * Returns {@code null} if the password is not found or an error occurs.
      */
     @Override
     public char[] getPassword(String alias) {
@@ -48,8 +46,6 @@ public class UnixKeychain implements Keychain {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws RuntimeException if the secret service operation fails
      */
     @Override
     public void setPassword(String alias, char[] newPassword) {
@@ -58,24 +54,33 @@ public class UnixKeychain implements Keychain {
 
     /**
      * {@inheritDoc}
-     *
-     * @throws RuntimeException if the secret service operation fails
      */
     @Override
     public void deletePassword(String alias) {
         UNIX_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws UnsupportedOperationException
+     */
     @Override
-    public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
-        throw new UnsupportedOperationException("Unix-systems not supported this operation");
+    public void setAuthorizationMethod(AuthorizationMethod method) {
+        throw new UnsupportedOperationException("Unix-systems(and Keyer) not support any authorization methods. Only NONE(default)");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AuthorizationMethod currentAuthorizationMethod() {
         return authorizationMethod;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
         return Set.of(AuthorizationMethod.NONE);

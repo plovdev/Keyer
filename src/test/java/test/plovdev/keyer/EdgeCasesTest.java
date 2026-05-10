@@ -1,9 +1,8 @@
 package test.plovdev.keyer;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.plovdev.keyer.Keychain;
 import org.plovdev.keyer.Platform;
 
@@ -13,12 +12,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EdgeCasesTest {
-    private static final String APP_ID = "KeyApp";
+    private static final String APP_ID = "KeyerApp";
     private static final String ALIAS = "Keyer";
     private static final Keychain keychain = Keychain.getKeychain(APP_ID);
 
     @Test
+    @Order(1)
     void testEmptyPassword() {
+        keychain.deletePassword(ALIAS);
         char[] emptyPass = new char[0];
         assertDoesNotThrow(() -> keychain.setPassword(ALIAS, emptyPass));
         assertArrayEquals(emptyPass, keychain.getPassword(ALIAS));
@@ -73,7 +74,7 @@ public class EdgeCasesTest {
     }
 
     @Test
-    @Disabled
+    @EnabledOnOs(OS.MAC)
     void testGetNonExistentReturnsNull() {
         keychain.deletePassword(ALIAS);
         assertNull(keychain.getPassword("non_existent_alias"));
@@ -87,5 +88,10 @@ public class EdgeCasesTest {
     @Test
     void testSetNullPassword() {
         assertThrows(NullPointerException.class, () -> keychain.setPassword(ALIAS, null));
+    }
+
+    @AfterAll
+    static void cleanup() {
+        keychain.deletePassword(ALIAS);
     }
 }

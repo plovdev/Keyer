@@ -19,7 +19,7 @@ public class WindowsKeychain implements Keychain {
     /**
      * Native bridge for Project Panama calls.
      */
-    private static final WinOsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WinOsKeychainNative();
+    private final WinOsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WinOsKeychainNative();
 
     private final String appId;
     private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
@@ -57,16 +57,25 @@ public class WindowsKeychain implements Keychain {
         WIN_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
         this.authorizationMethod = method;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public AuthorizationMethod currentAuthorizationMethod() {
         return authorizationMethod;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
         return Set.of();

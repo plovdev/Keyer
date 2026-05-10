@@ -12,8 +12,8 @@ package org.plovdev.keyer.exceptions;
  * </ul>
  *
  * @author Anton
- * @since 1.6
  * @version 1.6
+ * @since 1.6
  */
 public class AccessDeniedException extends KeyerException {
     /**

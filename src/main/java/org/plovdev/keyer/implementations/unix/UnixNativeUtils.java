@@ -15,8 +15,8 @@ import java.lang.foreign.SymbolLookup;
  * based on the application's main class package.
  *
  * @author Anton
- * @since 1.6
  * @version 1.6
+ * @since 1.6
  */
 public final class UnixNativeUtils {
     private static final Logger log = LoggerFactory.getLogger(UnixNativeUtils.class);
