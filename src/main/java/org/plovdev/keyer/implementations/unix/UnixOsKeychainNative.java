@@ -59,6 +59,20 @@ public final class UnixOsKeychainNative {
     private static final int NO_SUCH_OBJECT = 3;
     private static final int SECRET_ALREADY_EXISTS = 4;
 
+    public char @Nullable [] getPassword(String app, String alias) {
+        Objects.requireNonNull(app);
+        Objects.requireNonNull(alias);
+
+        byte[] rawBytes = getRawPassword(app, alias);
+        if (rawBytes == null) {
+            return null;
+        }
+
+        char[] password = NativeUtils.bytesToCharsUTF_8(rawBytes);
+        Arrays.fill(rawBytes, (byte) 0);
+        return password;
+    }
+
     /**
      * Retrieves a password from the secret service.
      *
@@ -68,7 +82,7 @@ public final class UnixOsKeychainNative {
      * @throws KeyerException        if the operation fails
      * @throws AccessDeniedException if the secret service is locked
      */
-    public char @Nullable [] getPassword(String app, String alias) {
+    public synchronized byte @Nullable [] getRawPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -106,13 +120,24 @@ public final class UnixOsKeychainNative {
             MemorySegment readable = passwordSegment.reinterpret(size);
             byte[] rawBytes = new byte[(int) size];
             MemorySegment.copy(readable, ValueLayout.JAVA_BYTE, 0, rawBytes, 0, (int) size);
-            char[] password = NativeUtils.bytesToCharsUTF_8(rawBytes);
-            Arrays.fill(rawBytes, (byte) 0);
-            G_FREE.invokeExact(passwordSegment);
 
-            return password;
+            G_FREE.invokeExact(passwordSegment);
+            return rawBytes;
         } catch (Throwable t) {
             throw new KeyerException("Error getting password", t);
+        }
+    }
+
+    public void setPassword(String app, String alias, char[] newPassword) {
+        Objects.requireNonNull(app);
+        Objects.requireNonNull(alias);
+        Objects.requireNonNull(newPassword);
+
+        byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
+        try {
+            setPasswordRaw(app, alias, passBytes);
+        } finally {
+            Arrays.fill(passBytes, (byte) 0);
         }
     }
 
@@ -128,15 +153,14 @@ public final class UnixOsKeychainNative {
      * @throws KeyerException        if the operation fails
      * @throws AccessDeniedException if the secret service is locked
      */
-    public void setPassword(String app, String alias, char[] newPassword) {
+    public synchronized void setPasswordRaw(String app, String alias, byte[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
 
-        byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
         try (var arena = Arena.ofConfined()) {
             MemorySegment errorPtr = arena.allocate(ValueLayout.ADDRESS);
-            MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, passBytes);
+            MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPassword);
 
             String label = formLabel(app, alias);
             boolean success = (boolean) SECRET_PASSWORD_STORE_SYNC.invokeExact(
@@ -162,8 +186,6 @@ public final class UnixOsKeychainNative {
             log.debug("Password stored successfully");
         } catch (Throwable t) {
             throw new KeyerException("Cannot set password", t);
-        } finally {
-            Arrays.fill(passBytes, (byte) 0);
         }
     }
 
@@ -177,7 +199,7 @@ public final class UnixOsKeychainNative {
      * @throws KeyerException        if the operation fails
      * @throws AccessDeniedException if the secret service is locked
      */
-    public void deletePassword(String app, String alias) {
+    public synchronized void deletePassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 

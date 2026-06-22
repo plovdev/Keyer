@@ -1,10 +1,10 @@
 package example.plovdev.keyer;
 
-import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.Keychain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -37,14 +37,13 @@ public class KeyerExample {
     static void main() {
         // 1. Get the keychain instance for your application
         Keychain keychain = Keychain.getKeychain("MyApp4");
-        keychain.setAuthorizationMethod(AuthorizationMethod.BIOMETRY);
         String alias = "wallet6";
 
         // 2. Set a new password
-        keychain.setPassword(alias, "123".toCharArray());
+        keychain.setPasswordRaw(alias, "123".getBytes(StandardCharsets.UTF_8));
 
         // 3. Retrieve the password
-        char[] password = keychain.getPassword(alias);
+        byte[] password = keychain.getRawPassword(alias);
 
         // 4. Log the result
         log.info("Getted password: {}", new String(Objects.requireNonNull(password)));

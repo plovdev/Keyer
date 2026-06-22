@@ -39,11 +39,27 @@ public class MacKeychain implements Keychain {
 
     /**
      * {@inheritDoc}
+     */
+    @Override
+    public byte[] getRawPassword(String alias) {
+        return MAC_OS_KEYCHAIN_NATIVE.getRawPassword(appId, alias);
+    }
+
+    /**
+     * {@inheritDoc}
      * <p>Overwrites the password if the alias already exists for this application.</p>
      */
     @Override
     public void setPassword(String alias, char[] newPassword) {
         MAC_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, authorizationMethod, newPassword);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setPasswordRaw(String alias, byte[] password) {
+        MAC_OS_KEYCHAIN_NATIVE.setPasswordRaw(appId, alias, authorizationMethod, password);
     }
 
     /**

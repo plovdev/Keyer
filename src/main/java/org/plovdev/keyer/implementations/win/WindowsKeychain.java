@@ -45,8 +45,24 @@ public class WindowsKeychain implements Keychain {
      * {@inheritDoc}
      */
     @Override
+    public byte[] getRawPassword(String alias) {
+        return WIN_OS_KEYCHAIN_NATIVE.getRawPassword(appId, alias);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setPassword(String alias, char[] newPassword) {
         WIN_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setPasswordRaw(String alias, byte[] password) {
+        WIN_OS_KEYCHAIN_NATIVE.setPasswordRaw(appId, alias, password);
     }
 
     /**

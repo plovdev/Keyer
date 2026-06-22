@@ -67,6 +67,20 @@ public final class WinOsKeychainNative {
             ValueLayout.ADDRESS.withName("UserName")
     );
 
+    public char @Nullable [] getPassword(String appId, String alias) {
+        Objects.requireNonNull(appId);
+        Objects.requireNonNull(alias);
+
+        byte[] rawPassword = getRawPassword(appId, alias);
+        if (rawPassword == null) {
+            return null;
+        }
+
+        char[] password = NativeUtils.bytesToCharsUTF_16LE(rawPassword);
+        Arrays.fill(rawPassword, (byte) 0);
+        return password;
+    }
+
     /**
      * Retrieves stored password for specified application and alias.
      *
@@ -75,7 +89,7 @@ public final class WinOsKeychainNative {
      * @return password as char array, or {@code null} if not found
      * @throws KeyerException if Windows API call fails
      */
-    public char @Nullable [] getPassword(String appId, String alias) {
+    public synchronized byte @Nullable [] getRawPassword(String appId, String alias) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
 
@@ -99,7 +113,7 @@ public final class WinOsKeychainNative {
             int blobSize = credential.get(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize")));
             if (blobSize <= 0) {
                 CLEAN_PASSWORD.invokeExact(itemRef);
-                return new char[0];  // Empty password
+                return null;  // Empty password
             }
 
             MemorySegment blobPtr = credential.get(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob")));
@@ -110,13 +124,23 @@ public final class WinOsKeychainNative {
 
             MemorySegment blob = blobPtr.reinterpret(blobSize);
             byte[] rawPassword = blob.toArray(ValueLayout.JAVA_BYTE);
-            char[] password = NativeUtils.bytesToCharsUTF_16LE(rawPassword);
-
             CLEAN_PASSWORD.invokeExact(itemRef);
-            Arrays.fill(rawPassword, (byte) 0);
-            return password;
+            return rawPassword;
         } catch (Throwable t) {
             throw new KeyerException("Windows CredRead failed", t);
+        }
+    }
+
+    public void setPassword(String appId, String alias, char[] newPassword) {
+        Objects.requireNonNull(appId);
+        Objects.requireNonNull(alias);
+        Objects.requireNonNull(newPassword);
+
+        byte[] passBytes = NativeUtils.charsUTF_16LEToBytes(newPassword);
+        try {
+            setPasswordRaw(appId, alias, passBytes);
+        } finally {
+            Arrays.fill(passBytes, (byte) 0);
         }
     }
 
@@ -131,16 +155,15 @@ public final class WinOsKeychainNative {
      * @param newPassword password to store (will be zeroed after use)
      * @throws KeyerException if Windows API call fails
      */
-    public synchronized void setPassword(String appId, String alias, char[] newPassword) {
+    public synchronized void setPasswordRaw(String appId, String alias, byte[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
 
-        byte[] passwordBytes = NativeUtils.charsUTF_16LEToBytes(newPassword);
         try (var arena = Arena.ofConfined()) {
             String targetName = formTargetName(appId, alias);
             MemorySegment targetSegment = arena.allocateFrom(targetName, StandardCharsets.UTF_16LE);
-            MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, passwordBytes);
+            MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPassword);
 
             MemorySegment credential = arena.allocate(CREDENTIAL_LAYOUT);
             credential.fill((byte) 0);
@@ -148,7 +171,7 @@ public final class WinOsKeychainNative {
             credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Type")), CRED_TYPE_GENERIC);
             credential.set(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("TargetName")), targetSegment);
             credential.set(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("UserName")), targetSegment);
-            credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize")), passwordBytes.length);
+            credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize")), newPassword.length);
             credential.set(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob")), passwordSegment);
             credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Persist")), CRED_PERSIST_LOCAL_MACHINE);
 
@@ -160,8 +183,6 @@ public final class WinOsKeychainNative {
             log.debug("Password stored in Windows Vault");
         } catch (Throwable t) {
             throw new KeyerException("Cannot set password", t);
-        } finally {
-            Arrays.fill(passwordBytes, (byte) 0);
         }
     }
 
@@ -174,7 +195,7 @@ public final class WinOsKeychainNative {
      * @param alias credential alias name
      * @throws KeyerException if Windows API call fails unexpectedly
      */
-    public void deletePassword(String appId, String alias) {
+    public synchronized void deletePassword(String appId, String alias) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
 

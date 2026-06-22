@@ -58,6 +58,8 @@ public interface Keychain {
      */
     char[] getPassword(String alias);
 
+    byte[] getRawPassword(String alias);
+
     /**
      * Saves or updates a password in the native store.
      * <p>
@@ -67,6 +69,8 @@ public interface Keychain {
      * @param newPassword the password to be stored.
      */
     void setPassword(String alias, char[] newPassword);
+
+    void setPasswordRaw(String alias, byte[] password);
 
     /**
      * Deletes a password from the native store.

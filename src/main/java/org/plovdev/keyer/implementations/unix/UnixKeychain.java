@@ -37,11 +37,15 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public char[] getPassword(String alias) {
-        try {
-            return UNIX_OS_KEYCHAIN_NATIVE.getPassword(appId, alias);
-        } catch (Exception e) {
-            return null;
-        }
+        return UNIX_OS_KEYCHAIN_NATIVE.getPassword(appId, alias);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public byte[] getRawPassword(String alias) {
+        return UNIX_OS_KEYCHAIN_NATIVE.getRawPassword(appId, alias);
     }
 
     /**
@@ -50,6 +54,14 @@ public class UnixKeychain implements Keychain {
     @Override
     public void setPassword(String alias, char[] newPassword) {
         UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setPasswordRaw(String alias, byte[] password) {
+        UNIX_OS_KEYCHAIN_NATIVE.setPasswordRaw(appId, alias, password);
     }
 
     /**
