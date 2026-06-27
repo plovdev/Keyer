@@ -113,7 +113,7 @@ public final class WinOsKeychainNative {
             int blobSize = credential.get(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize")));
             if (blobSize <= 0) {
                 CLEAN_PASSWORD.invokeExact(itemRef);
-                return null;  // Empty password
+                return new byte[0];  // Empty password
             }
 
             MemorySegment blobPtr = credential.get(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob")));
