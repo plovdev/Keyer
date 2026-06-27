@@ -36,7 +36,7 @@ public class KeyerExample {
      */
     static void main() {
         // 1. Get the keychain instance for your application
-        Keychain keychain = Keychain.getKeychain("MyApp4");
+        Keychain keychain = Keychain.getKeychain(KeyerExample.class);
         String alias = "wallet6";
 
         // 2. Set a new password

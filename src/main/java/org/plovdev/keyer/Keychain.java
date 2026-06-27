@@ -29,6 +29,19 @@ public interface Keychain {
     /**
      * Factory method to obtain the appropriate Keychain instance for the current platform.
      * <p>
+     * The returned instance is automatically initialized with the provided {@code cls}.
+     *
+     * @param cls class which use this Keychain service.
+     * @return a thread-safe {@link Keychain} instance for the detected OS.
+     * @throws IllegalArgumentException if the current platform is not supported.
+     */
+    static @NonNull Keychain getKeychain(@NonNull Class<?> cls) {
+        return getKeychain(cls.getName());
+    }
+
+    /**
+     * Factory method to obtain the appropriate Keychain instance for the current platform.
+     * <p>
      * The returned instance is automatically initialized with the provided {@code appId}.
      *
      * @param appId a unique identifier for the application (e.g., "com.myapp.service").
