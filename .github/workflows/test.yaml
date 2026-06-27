@@ -7,21 +7,42 @@ on:
 
 jobs:
   test:
+    name: ${{ matrix.os }} / ${{ matrix.arch }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest ]
+        include:
+          - os: macos-13
+            arch: x64
+            display: "macOS 13"
+          - os: macos-14
+            arch: arm64
+            display: "macOS 14"
+          - os: macos-15
+            arch: arm64
+            display: "macOS 15"
+
+          - os: windows-2019
+            arch: x64
+            display: "Windows Server 2019"
+          - os: windows-2022
+            arch: x64
+            display: "Windows Server 2022"
+          - os: windows-latest
+            arch: x64
+            display: "Windows 11"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
-
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
+          architecture: ${{ matrix.arch }}
           cache: 'maven'
 
-      - name: Test (macOS/Windows)
+      - name: Test on ${{ matrix.display }}
         run: mvn test -DargLine="--enable-native-access=ALL-UNNAMED"
