@@ -26,7 +26,7 @@
 И Gradle:
 
 ```groovy
-implementation("io.github.plovdev:keyer:1.7-beta")
+implementation("io.github.plovdev:keyer:1.7.1-beta")
 ```
 
 ## Быстрый старт
