@@ -19,9 +19,7 @@ public class UnixKeychain implements Keychain {
      * Native bridge for Project Panama calls.
      */
     private final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
-
     private final String appId;
-    private final AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
 
     /**
      * Constructs a UnixKeychain instance.
@@ -52,7 +50,7 @@ public class UnixKeychain implements Keychain {
      * {@inheritDoc}
      */
     @Override
-    public void setPassword(String alias, char[] newPassword) {
+    public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
         UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
     }
 
@@ -60,8 +58,8 @@ public class UnixKeychain implements Keychain {
      * {@inheritDoc}
      */
     @Override
-    public void setPasswordRaw(String alias, byte[] password) {
-        UNIX_OS_KEYCHAIN_NATIVE.setPasswordRaw(appId, alias, password);
+    public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
+        UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -70,24 +68,6 @@ public class UnixKeychain implements Keychain {
     @Override
     public void deletePassword(String alias) {
         UNIX_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @throws UnsupportedOperationException
-     */
-    @Override
-    public void setAuthorizationMethod(AuthorizationMethod method) {
-        throw new UnsupportedOperationException("Unix-systems(and Keyer) not support any authorization methods. Only NONE(default)");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AuthorizationMethod currentAuthorizationMethod() {
-        return authorizationMethod;
     }
 
     /**

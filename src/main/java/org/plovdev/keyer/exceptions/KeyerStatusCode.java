@@ -59,6 +59,11 @@ public enum KeyerStatusCode {
     DATA_TOO_LARGE,
 
     /**
+     * Platform not supported
+     */
+    PLATFORM_NOT_SUPPORTED,
+
+    /**
      * Unknown
      */
     UNKNOWN_ERROR

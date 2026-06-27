@@ -21,9 +21,7 @@ public class MacKeychain implements Keychain {
      * Native bridge for Project Panama calls.
      */
     private final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
-
     private final String appId;
-    private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.PASSWORD;
 
     public MacKeychain(String appId) {
         this.appId = appId;
@@ -47,19 +45,18 @@ public class MacKeychain implements Keychain {
 
     /**
      * {@inheritDoc}
-     * <p>Overwrites the password if the alias already exists for this application.</p>
      */
     @Override
-    public void setPassword(String alias, char[] newPassword) {
-        MAC_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, authorizationMethod, newPassword);
+    public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
+        MAC_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, method, newPassword);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void setPasswordRaw(String alias, byte[] password) {
-        MAC_OS_KEYCHAIN_NATIVE.setPasswordRaw(appId, alias, authorizationMethod, password);
+    public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
+        MAC_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, method, newPassword);
     }
 
     /**
@@ -68,22 +65,6 @@ public class MacKeychain implements Keychain {
     @Override
     public void deletePassword(String alias) {
         MAC_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
-        this.authorizationMethod = method;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AuthorizationMethod currentAuthorizationMethod() {
-        return authorizationMethod;
     }
 
     /**

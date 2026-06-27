@@ -20,9 +20,7 @@ public class WindowsKeychain implements Keychain {
      * Native bridge for Project Panama calls.
      */
     private final WinOsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WinOsKeychainNative();
-
     private final String appId;
-    private volatile AuthorizationMethod authorizationMethod = AuthorizationMethod.NONE;
 
     /**
      * Constructs a WindowsKeychain instance.
@@ -53,7 +51,7 @@ public class WindowsKeychain implements Keychain {
      * {@inheritDoc}
      */
     @Override
-    public void setPassword(String alias, char[] newPassword) {
+    public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
         WIN_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
     }
 
@@ -61,8 +59,8 @@ public class WindowsKeychain implements Keychain {
      * {@inheritDoc}
      */
     @Override
-    public void setPasswordRaw(String alias, byte[] password) {
-        WIN_OS_KEYCHAIN_NATIVE.setPasswordRaw(appId, alias, password);
+    public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
+        WIN_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -77,23 +75,7 @@ public class WindowsKeychain implements Keychain {
      * {@inheritDoc}
      */
     @Override
-    public synchronized void setAuthorizationMethod(AuthorizationMethod method) {
-        this.authorizationMethod = method;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AuthorizationMethod currentAuthorizationMethod() {
-        return authorizationMethod;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
-        return Set.of();
+        return Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD);
     }
 }

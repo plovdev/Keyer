@@ -21,7 +21,6 @@ public enum AuthorizationMethod {
 
     /**
      * Requires biometric authentication (e.g., Touch ID, Face ID, or Windows Hello).
-     * Falls back to the system password if biometrics are unavailable or fail.
      */
     BIOMETRY
 }

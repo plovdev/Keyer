@@ -67,6 +67,16 @@ public final class WinOsKeychainNative {
             ValueLayout.ADDRESS.withName("UserName")
     );
 
+    /**
+     * Retrieves a password as a char array.
+     * <p>
+     * Converts the raw UTF-16LE byte data from Windows Credential Manager
+     * to a char array. The raw byte array is zeroed immediately after conversion.
+     *
+     * @param appId the application identifier (service name).
+     * @param alias the credential alias (account name).
+     * @return password as char array (UTF-16LE encoded), or {@code null} if not found.
+     */
     public char @Nullable [] getPassword(String appId, String alias) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
@@ -82,12 +92,15 @@ public final class WinOsKeychainNative {
     }
 
     /**
-     * Retrieves stored password for specified application and alias.
+     * Retrieves a password as a byte array directly from Windows Credential Manager.
+     * <p>
+     * Performs a synchronous lookup using {@code CredReadW} with the
+     * {@link #CRED_TYPE_GENERIC} credential type.
      *
-     * @param appId application identifier
-     * @param alias credential alias name
-     * @return password as char array, or {@code null} if not found
-     * @throws KeyerException if Windows API call fails
+     * @param appId the application identifier.
+     * @param alias the credential alias.
+     * @return password as byte array, or {@code null} if not found.
+     * @throws KeyerException if the Windows API call fails.
      */
     public synchronized byte @Nullable [] getRawPassword(String appId, String alias) {
         Objects.requireNonNull(appId);
@@ -131,6 +144,17 @@ public final class WinOsKeychainNative {
         }
     }
 
+    /**
+     * Stores a password from a char array.
+     * <p>
+     * Converts the char array to UTF-16LE bytes and delegates
+     * to {@link #setPassword(String, String, byte[])}.
+     * The char array is zeroed after conversion.
+     *
+     * @param appId       the application identifier.
+     * @param alias       the credential alias.
+     * @param newPassword the password to store (UTF-16LE encoded).
+     */
     public void setPassword(String appId, String alias, char[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
@@ -138,24 +162,27 @@ public final class WinOsKeychainNative {
 
         byte[] passBytes = NativeUtils.charsUTF_16LEToBytes(newPassword);
         try {
-            setPasswordRaw(appId, alias, passBytes);
+            setPassword(appId, alias, passBytes);
         } finally {
             Arrays.fill(passBytes, (byte) 0);
         }
     }
 
     /**
-     * Stores or updates password in Windows Credential Manager.
+     * Stores or updates a password in Windows Credential Manager.
      * <p>
      * If a credential with the same target name already exists,
-     * it will be overwritten automatically.
+     * it will be overwritten automatically by Windows.
+     * <p>
+     * Credentials are persisted locally for the current machine
+     * ({@link #CRED_PERSIST_LOCAL_MACHINE}).
      *
-     * @param appId       application identifier
-     * @param alias       credential alias name
-     * @param newPassword password to store (will be zeroed after use)
-     * @throws KeyerException if Windows API call fails
+     * @param appId       the application identifier.
+     * @param alias       the credential alias.
+     * @param newPassword the password as byte array.
+     * @throws KeyerException if the Windows API call fails.
      */
-    public synchronized void setPasswordRaw(String appId, String alias, byte[] newPassword) {
+    public synchronized void setPassword(String appId, String alias, byte[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
@@ -187,13 +214,14 @@ public final class WinOsKeychainNative {
     }
 
     /**
-     * Deletes credential from Windows Vault.
+     * Deletes a credential from Windows Credential Manager.
      * <p>
-     * Does nothing if credential doesn't exist (ERROR_NOT_FOUND = 1168).
+     * If the credential does not exist ({@link #NOT_FOUND}), the operation
+     * succeeds silently.
      *
-     * @param appId application identifier
-     * @param alias credential alias name
-     * @throws KeyerException if Windows API call fails unexpectedly
+     * @param appId the application identifier.
+     * @param alias the credential alias.
+     * @throws KeyerException if the Windows API call fails.
      */
     public synchronized void deletePassword(String appId, String alias) {
         Objects.requireNonNull(appId);

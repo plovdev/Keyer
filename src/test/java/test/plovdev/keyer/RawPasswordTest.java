@@ -18,7 +18,7 @@ public class RawPasswordTest {
     @Order(1)
     @Test
     void testSetPassword() {
-        assertDoesNotThrow(() -> KEYCHAIN.setPasswordRaw(ALIAS, "password".getBytes()));
+        assertDoesNotThrow(() -> KEYCHAIN.setPassword(ALIAS, "password".getBytes()));
     }
 
     @Order(2)

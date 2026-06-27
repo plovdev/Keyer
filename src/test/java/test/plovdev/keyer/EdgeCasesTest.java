@@ -82,9 +82,11 @@ public class EdgeCasesTest {
         assertDoesNotThrow(() -> keychain.deletePassword("non_existent"));
     }
 
+    @SuppressWarnings("ConstantValue")
     @Test
     void testSetNullPassword() {
-        assertThrows(NullPointerException.class, () -> keychain.setPassword(ALIAS, null));
+        char[] nullPassword = null;
+        assertThrows(NullPointerException.class, () -> keychain.setPassword(ALIAS, nullPassword));
     }
 
     @AfterAll

@@ -59,6 +59,16 @@ public final class UnixOsKeychainNative {
     private static final int NO_SUCH_OBJECT = 3;
     private static final int SECRET_ALREADY_EXISTS = 4;
 
+    /**
+     * Retrieves a password as a char array.
+     * <p>
+     * Converts the raw byte data from the Keychain to a char array using UTF-8
+     * decoding. The raw byte array is zeroed immediately after conversion.
+     *
+     * @param app   the service name (application identifier)
+     * @param alias the account name
+     * @return password as char array, or {@code null} if not found
+     */
     public char @Nullable [] getPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
@@ -74,13 +84,12 @@ public final class UnixOsKeychainNative {
     }
 
     /**
-     * Retrieves a password from the secret service.
+     * Retrieves a password as a byte array directly from the Keychain.
      *
-     * @param app   service name (application identifier)
-     * @param alias account name
-     * @return password as char array, or {@code null} if not found
-     * @throws KeyerException        if the operation fails
-     * @throws AccessDeniedException if the secret service is locked
+     * @param app   the service name
+     * @param alias the account name
+     * @return password as byte array, or {@code null} if not found
+     * @throws KeyerException if a native call fails unexpectedly
      */
     public synchronized byte @Nullable [] getRawPassword(String app, String alias) {
         Objects.requireNonNull(app);
@@ -128,6 +137,17 @@ public final class UnixOsKeychainNative {
         }
     }
 
+    /**
+     * Stores a password from a char array.
+     * <p>
+     * Converts the char array to bytes using UTF-8 encoding and delegates
+     * to {@link #setPassword(String, String, byte[])}.
+     * The char array is zeroed after conversion.
+     *
+     * @param app         the service name.
+     * @param alias       the account name.
+     * @param newPassword the password to store.
+     */
     public void setPassword(String app, String alias, char[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
@@ -135,7 +155,7 @@ public final class UnixOsKeychainNative {
 
         byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
         try {
-            setPasswordRaw(app, alias, passBytes);
+            setPassword(app, alias, passBytes);
         } finally {
             Arrays.fill(passBytes, (byte) 0);
         }
@@ -145,15 +165,16 @@ public final class UnixOsKeychainNative {
      * Stores or updates a password in the secret service.
      * <p>
      * If a password with the same service/account already exists,
-     * it will be overwritten.
+     * it will be overwritten. The password is stored with a descriptive
+     * label in the format {@code "service - account"}.
      *
-     * @param app         service name
-     * @param alias       account name
-     * @param newPassword password to store (will be zeroed after use)
-     * @throws KeyerException        if the operation fails
-     * @throws AccessDeniedException if the secret service is locked
+     * @param app         the service name.
+     * @param alias       the account name.
+     * @param newPassword the password as byte array.
+     * @throws KeyerException        if the operation fails.
+     * @throws AccessDeniedException if the secret service is locked.
      */
-    public synchronized void setPasswordRaw(String app, String alias, byte[] newPassword) {
+    public synchronized void setPassword(String app, String alias, byte[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
@@ -192,12 +213,12 @@ public final class UnixOsKeychainNative {
     /**
      * Deletes a password from the secret service.
      * <p>
-     * Does nothing if the password does not exist.
+     * If the password does not exist, the operation succeeds silently.
      *
-     * @param app   service name
-     * @param alias account name
-     * @throws KeyerException        if the operation fails
-     * @throws AccessDeniedException if the secret service is locked
+     * @param app   the service name
+     * @param alias the account name
+     * @throws KeyerException        if the operation fails.
+     * @throws AccessDeniedException if the secret service is locked.
      */
     public synchronized void deletePassword(String app, String alias) {
         Objects.requireNonNull(app);

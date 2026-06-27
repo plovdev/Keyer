@@ -12,25 +12,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-13
-            arch: x64
-            display: "macOS 13"
           - os: macos-14
             arch: arm64
             display: "macOS 14"
           - os: macos-15
             arch: arm64
             display: "macOS 15"
-
-          - os: windows-2019
-            arch: x64
-            display: "Windows Server 2019"
           - os: windows-2022
             arch: x64
             display: "Windows Server 2022"
           - os: windows-latest
             arch: x64
-            display: "Windows 11"
+            display: "Windows latest"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

@@ -7,7 +7,7 @@
     <groupId>io.github.plovdev</groupId>
     <artifactId>keyer</artifactId>
     <name>Keyer</name>
-    <version>1.7-beta</version>
+    <version>1.7.1-beta</version>
     <description>Keyer - Lightweight Native Keychain Access for Java</description>
     <url>https://github.com/plovdev/Keyer</url>
 
@@ -43,7 +43,7 @@
         <jspec.scope>provided</jspec.scope>
     </properties>
     <dependencies>
-        <!-- JSpecify Dependencies !-->
+        <!-- JSpecify Dependencies -->
         <dependency>
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
@@ -51,14 +51,14 @@
             <scope>${jspec.scope}</scope>
         </dependency>
 
-        <!-- SLF4J Dependencies !-->
+        <!-- SLF4J Dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
 
-        <!-- JUnit Dependencies !-->
+        <!-- JUnit Dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

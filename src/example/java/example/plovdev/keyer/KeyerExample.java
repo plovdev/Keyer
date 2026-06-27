@@ -40,7 +40,7 @@ public class KeyerExample {
         String alias = "wallet6";
 
         // 2. Set a new password
-        keychain.setPasswordRaw(alias, "123".getBytes(StandardCharsets.UTF_8));
+        keychain.setPassword(alias, "123".getBytes(StandardCharsets.UTF_8));
 
         // 3. Retrieve the password
         byte[] password = keychain.getRawPassword(alias);

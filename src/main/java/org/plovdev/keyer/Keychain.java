@@ -1,6 +1,8 @@
 package org.plovdev.keyer;
 
 import org.jspecify.annotations.NonNull;
+import org.plovdev.keyer.exceptions.KeyerStatusCode;
+import org.plovdev.keyer.exceptions.PlatformNotSupportedException;
 import org.plovdev.keyer.implementations.mac.MacKeychain;
 import org.plovdev.keyer.implementations.unix.UnixKeychain;
 import org.plovdev.keyer.implementations.win.WindowsKeychain;
@@ -55,7 +57,7 @@ public interface Keychain {
             case WINDOWS -> new WindowsKeychain(appId);
             case MAC -> new MacKeychain(appId);
             case UNIX -> new UnixKeychain(appId);
-            default -> throw new IllegalArgumentException("Platform " + platform.name() + " not supported");
+            default -> throw new PlatformNotSupportedException("Platform " + platform.name() + " not supported", platform, KeyerStatusCode.PLATFORM_NOT_SUPPORTED);
         };
     }
 
@@ -71,6 +73,17 @@ public interface Keychain {
      */
     char[] getPassword(String alias);
 
+    /**
+     * Retrieves a password from the native store as a byte array.
+     * <p>
+     * Returns the secret as a {@code byte[]} for scenarios where raw byte
+     * processing is preferred, such as when working with binary keys or
+     * cryptographic material.
+     *
+     * @param alias the unique name or account identifier associated with the password.
+     * @return a {@code byte[]} containing the password, or {@code null} if the
+     * alias was not found or an error occurred.
+     */
     byte[] getRawPassword(String alias);
 
     /**
@@ -81,9 +94,39 @@ public interface Keychain {
      * @param alias       the name or account identifier to associate the password with.
      * @param newPassword the password to be stored.
      */
-    void setPassword(String alias, char[] newPassword);
+    default void setPassword(String alias, char[] newPassword) {
+        setPassword(alias, newPassword, AuthorizationMethod.NONE);
+    }
 
-    void setPasswordRaw(String alias, byte[] password);
+    /**
+     * Saves or updates a password with explicit authorization.
+     *
+     * @param alias       the name or account identifier to associate the password with.
+     * @param newPassword the password to be stored.
+     * @param method      the authorization method to use (e.g., PASSWORD, BIOMETRY).
+     */
+    void setPassword(String alias, char[] newPassword, AuthorizationMethod method);
+
+    /**
+     * Saves or updates a password from a byte array.
+     * <p>
+     * If an entry with the same alias already exists, it will be overwritten.
+     *
+     * @param alias       the name or account identifier to associate the password with.
+     * @param newPassword the password as a byte array.
+     */
+    default void setPassword(String alias, byte[] newPassword) {
+        setPassword(alias, newPassword, AuthorizationMethod.NONE);
+    }
+
+    /**
+     * Saves or updates a password from a byte array with explicit authorization.
+     *
+     * @param alias       the name or account identifier to associate the password with.
+     * @param newPassword the password as a byte array.
+     * @param method      the authorization method to use (e.g., PASSWORD, BIOMETRY).
+     */
+    void setPassword(String alias, byte[] newPassword, AuthorizationMethod method);
 
     /**
      * Deletes a password from the native store.
@@ -93,23 +136,6 @@ public interface Keychain {
      * @param alias the name or account identifier of the password to remove.
      */
     void deletePassword(String alias);
-
-    /**
-     * Sets the authorization method to be used for subsequent password saving operations.
-     * <p>
-     * The selected method will be applied during calls to {@link #setPassword(String, char[])}.
-     * Changing this method does not affect already existing entries in the keychain.
-     *
-     * @param method the desired {@link AuthorizationMethod} to be used
-     */
-    void setAuthorizationMethod(AuthorizationMethod method);
-
-    /**
-     * Returns the authorization method currently active in this keychain instance.
-     *
-     * @return the current {@link AuthorizationMethod}
-     */
-    AuthorizationMethod currentAuthorizationMethod();
 
     /**
      * Returns a set of authorization methods supported by the current platform.

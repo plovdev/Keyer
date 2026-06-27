@@ -76,7 +76,16 @@ public final class MacOsKeychainNative {
     private static final int ACCESS_DENIED = -25293;
     private static final int ACCESS_LOCKED = -25308;
 
-
+    /**
+     * Retrieves a password as a char array.
+     * <p>
+     * Converts the raw byte data from the Keychain to a char array using UTF-8
+     * decoding. The raw byte array is zeroed immediately after conversion.
+     *
+     * @param app   the service name (application identifier)
+     * @param alias the account name
+     * @return password as char array, or {@code null} if not found
+     */
     public char @Nullable [] getPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
@@ -92,12 +101,12 @@ public final class MacOsKeychainNative {
     }
 
     /**
-     * Fetches a password from the Keychain.
+     * Retrieves a password as a byte array directly from the Keychain.
      *
-     * @param app   the service name (appId)
+     * @param app   the service name
      * @param alias the account name
-     * @return password as char array, or null if not found
-     * @throws RuntimeException if a native call fails unexpectedly
+     * @return password as byte array, or {@code null} if not found
+     * @throws KeyerException if a native call fails unexpectedly
      */
     public synchronized byte @Nullable [] getRawPassword(String app, String alias) {
         Objects.requireNonNull(app);
@@ -133,6 +142,18 @@ public final class MacOsKeychainNative {
         }
     }
 
+    /**
+     * Stores a password from a char array.
+     * <p>
+     * Converts the char array to bytes using UTF-8 encoding and delegates
+     * to {@link #setPassword(String, String, AuthorizationMethod, byte[])}.
+     * The char array is zeroed after conversion.
+     *
+     * @param appId       the service name.
+     * @param alias       the account name.
+     * @param method      the authorization method to use.
+     * @param newPassword the password to store.
+     */
     public void setPassword(String appId, String alias, AuthorizationMethod method, char[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
@@ -141,21 +162,26 @@ public final class MacOsKeychainNative {
 
         byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
         try {
-            setPasswordRaw(appId, alias, method, passBytes);
+            setPassword(appId, alias, method, passBytes);
         } finally {
             Arrays.fill(passBytes, (byte) 0);
         }
     }
 
     /**
-     * Saves a password. Attempts to delete any existing entry first to prevent duplicates.
+     * Stores or updates a password in the Keychain.
+     * <p>
+     * If an existing entry is found, it is updated. Otherwise, a new entry is created.
+     * When using biometric authorization, the keychain item is secured with
+     * {@code kSecAttrAccessControl} requiring biometric authentication.
      *
-     * @param app         the service name
-     * @param alias       the account name
-     * @param newPassword password to save
-     * @throws RuntimeException if the save operation fails
+     * @param app         the service name.
+     * @param alias       the account name.
+     * @param method      the authorization method (NONE, BIOMETRY).
+     * @param newPassword the password as byte array.
+     * @throws KeyerException if the operation fails.
      */
-    public synchronized void setPasswordRaw(String app, String alias, AuthorizationMethod method, byte[] newPassword) {
+    public synchronized void setPassword(String app, String alias, AuthorizationMethod method, byte[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(method);
@@ -211,11 +237,13 @@ public final class MacOsKeychainNative {
     }
 
     /**
-     * Deletes a specific keychain item.
+     * Deletes a password entry from the Keychain.
+     * <p>
+     * If the entry does not exist, the operation succeeds silently.
      *
      * @param app   the service name
      * @param alias the account name
-     * @throws RuntimeException if the item exists but cannot be deleted
+     * @throws KeyerException if the item exists but cannot be deleted
      */
     public synchronized void deletePassword(String app, String alias) {
         Objects.requireNonNull(app);
@@ -245,6 +273,11 @@ public final class MacOsKeychainNative {
         }
     }
 
+    /**
+     * Returns the set of authorization methods available on this platform.
+     *
+     * @return a set of supported authorization methods
+     */
     public @NonNull Set<AuthorizationMethod> getAvailAuthMethods() {
         return MacAuthHelper.supportedAuthMethods(ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED);
     }
