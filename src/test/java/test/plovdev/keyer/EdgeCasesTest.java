@@ -1,8 +1,6 @@
 package test.plovdev.keyer;
 
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.condition.EnabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.plovdev.keyer.Keychain;
 import org.plovdev.keyer.Platform;
 
@@ -20,9 +18,9 @@ public class EdgeCasesTest {
     @Order(1)
     void testEmptyPassword() {
         keychain.deletePassword(ALIAS);
-        char[] emptyPass = new char[0];
-        assertDoesNotThrow(() -> keychain.setPassword(ALIAS, emptyPass));
-        assertArrayEquals(emptyPass, keychain.getPassword(ALIAS));
+        char[] empty = new char[0];
+        assertDoesNotThrow(() -> keychain.setPassword(ALIAS, empty));
+        assertArrayEquals(empty, keychain.getPassword(ALIAS));
     }
 
     @Test
@@ -74,7 +72,6 @@ public class EdgeCasesTest {
     }
 
     @Test
-    @EnabledOnOs(OS.MAC)
     void testGetNonExistentReturnsNull() {
         keychain.deletePassword(ALIAS);
         assertNull(keychain.getPassword("non_existent_alias"));
