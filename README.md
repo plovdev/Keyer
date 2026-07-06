@@ -15,7 +15,6 @@
 ## Доступно на Maven Central
 
 ```xml
-
 <dependency>
     <groupId>io.github.plovdev</groupId>
     <artifactId>keyer</artifactId>

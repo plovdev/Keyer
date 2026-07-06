@@ -18,10 +18,9 @@ import java.util.Objects;
 import static org.plovdev.keyer.utils.NativeUtils.find;
 
 /**
- * Unix/Linux native implementation using libsecret (Secret Service API).
+ * Unix/Linux native implementation using libsecret.
  * <p>
- * Provides low-level access to GNOME Keyring, KDE Wallet, and other
- * secret service providers through the libsecret library.
+ * Provides low-level access to Libsecret.
  *
  * @author Anton
  * @version 1.7

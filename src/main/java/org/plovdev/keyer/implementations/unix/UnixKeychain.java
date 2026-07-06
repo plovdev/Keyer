@@ -2,6 +2,7 @@ package org.plovdev.keyer.implementations.unix;
 
 import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.Keychain;
+import org.plovdev.keyer.utils.KeychainUtils;
 
 import java.util.Set;
 
@@ -51,6 +52,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
+        KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
         UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
     }
 
@@ -59,6 +61,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
+        KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
         UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
     }
 
