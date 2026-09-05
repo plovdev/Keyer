@@ -321,13 +321,13 @@ public final class MacOsKeychainNative {
         return (MemorySegment) CF_DICT_CREATE.invokeExact(MemorySegment.NULL, keysPtr, valsPtr, (long) keys.length, MemorySegment.NULL, MemorySegment.NULL);
     }
 
-    private void executeClear(MemorySegment... toClear) {
-        Arrays.stream(toClear).forEach(segment -> {
+    private void executeClear(MemorySegment @NonNull ... toClear) {
+        for (MemorySegment segment : toClear) {
             try {
                 CF_RELEASE.invokeExact(segment);
             } catch (Throwable e) {
                 log.error("Error clear object: ", e);
             }
-        });
+        }
     }
 }
