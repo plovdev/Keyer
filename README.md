@@ -18,14 +18,14 @@
 <dependency>
     <groupId>io.github.plovdev</groupId>
     <artifactId>keyer</artifactId>
-    <version>1.7.1-beta</version> <!-- Latest version -->
+    <version>1.8-beta</version> <!-- Latest version -->
 </dependency>
 ```
 
 И Gradle:
 
 ```groovy
-implementation("io.github.plovdev:keyer:1.7.1-beta")
+implementation("io.github.plovdev:keyer:1.8-beta")
 ```
 
 ## Быстрый старт

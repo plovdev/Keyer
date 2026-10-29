@@ -22,7 +22,7 @@ import static org.plovdev.keyer.utils.NativeUtils.getConstant;
  * CRUD operations on Generic Password items.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8-beta
  * @since 1.6
  */
 public final class MacOsKeychainNative {
@@ -62,6 +62,8 @@ public final class MacOsKeychainNative {
     private static final MemorySegment VALUE_DATA = getConstant(SECURITY, "kSecValueData");
     private static final MemorySegment RETURN_DATA = getConstant(SECURITY, "kSecReturnData");
     private static final MemorySegment BOOLEAN_TRUE = getConstant(SECURITY, "kCFBooleanTrue");
+    private static final MemorySegment KEY_CALLBACKS = getConstant(SECURITY, "kCFTypeDictionaryKeyCallBacks");
+    private static final MemorySegment VAL_CALLBACKS = getConstant(SECURITY, "kCFTypeDictionaryValueCallBacks");
 
     private static final MemorySegment ACCESSIBLE = getConstant(SECURITY, "kSecAttrAccessible");
     private static final MemorySegment ACCESSIBLE_ALWAYS = getConstant(SECURITY, "kSecAttrAccessibleAlways");
@@ -193,40 +195,47 @@ public final class MacOsKeychainNative {
             MemorySegment passBlob = (newPassword.length > 0) ? arena.allocateFrom(ValueLayout.JAVA_BYTE, newPassword) : MemorySegment.NULL;
             MemorySegment passData = (MemorySegment) CF_DATA_CREATE.invokeExact(MemorySegment.NULL, passBlob, (long) newPassword.length);
 
-            MemorySegment[] queryKeys = {CLASS, ATTR_SERVICE, ATTR_ACCOUNT};
-            MemorySegment[] queryVals = {CLASS_GENERIC_PASSWORD, appStr, aliasStr};
-            MemorySegment queryDict = createDict(arena, queryKeys, queryVals);
+            try {
+                MemorySegment[] queryKeys = {CLASS, ATTR_SERVICE, ATTR_ACCOUNT};
+                MemorySegment[] queryVals = {CLASS_GENERIC_PASSWORD, appStr, aliasStr};
+                MemorySegment queryDict = createDict(arena, queryKeys, queryVals);
 
-            List<MemorySegment> upKeys = new ArrayList<>();
-            List<MemorySegment> upVals = new ArrayList<>();
-            upKeys.add(VALUE_DATA);
-            upVals.add(passData);
+                List<MemorySegment> upKeys = new ArrayList<>();
+                List<MemorySegment> upVals = new ArrayList<>();
+                upKeys.add(VALUE_DATA);
+                upVals.add(passData);
 
-            if (method == AuthorizationMethod.BIOMETRY) {
-                upKeys.add(ACCESS_CONTROL);
-                upVals.add(MacAuthHelper.createAccessControl(arena, ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED));
-            } else {
-                upKeys.add(ACCESSIBLE);
-                upVals.add((method == AuthorizationMethod.NONE) ? ACCESSIBLE_ALWAYS : ACCESSIBLE_WHEN_UNLOCKED);
+                if (method == AuthorizationMethod.BIOMETRY) {
+                    upKeys.add(ACCESS_CONTROL);
+                    upVals.add(MacAuthHelper.createAccessControl(arena, ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED));
+                } else {
+                    upKeys.add(ACCESSIBLE);
+                    upVals.add((method == AuthorizationMethod.NONE) ? ACCESSIBLE_ALWAYS : ACCESSIBLE_WHEN_UNLOCKED);
+                }
+
+                MemorySegment updateDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));
+                int status = (int) UPDATE_PASSWORD.invokeExact(queryDict, updateDict);
+
+                if (status == NOT_FOUND) {
+                    upKeys.add(CLASS);
+                    upVals.add(CLASS_GENERIC_PASSWORD);
+                    upKeys.add(ATTR_SERVICE);
+                    upVals.add(appStr);
+                    upKeys.add(ATTR_ACCOUNT);
+                    upVals.add(aliasStr);
+                    MemorySegment addDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));
+                    status = (int) ADD_PASSWORD.invokeExact(addDict, MemorySegment.NULL);
+                    CF_RELEASE.invokeExact(addDict);
+                }
+
+                executeClear(queryDict, updateDict);
+                throwException(status);
+            } finally {
+                executeClear(appStr, aliasStr, passData);
+                if (passBlob != MemorySegment.NULL) {
+                    passBlob.fill((byte) 0);
+                }
             }
-
-            MemorySegment updateDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));
-            int status = (int) UPDATE_PASSWORD.invokeExact(queryDict, updateDict);
-
-            if (status == NOT_FOUND) {
-                upKeys.add(CLASS);
-                upVals.add(CLASS_GENERIC_PASSWORD);
-                upKeys.add(ATTR_SERVICE);
-                upVals.add(appStr);
-                upKeys.add(ATTR_ACCOUNT);
-                upVals.add(aliasStr);
-                MemorySegment addDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));
-                status = (int) ADD_PASSWORD.invokeExact(addDict, MemorySegment.NULL);
-                CF_RELEASE.invokeExact(addDict);
-            }
-
-            executeClear(appStr, aliasStr, passData, queryDict, updateDict);
-            throwException(status);
         } catch (Throwable t) {
             if (t instanceof KeyerException ke) {
                 throw ke;
@@ -311,14 +320,17 @@ public final class MacOsKeychainNative {
         return ref;
     }
 
-    private MemorySegment createDict(@NonNull Arena arena, MemorySegment @NonNull [] keys, MemorySegment @NonNull [] values) throws Throwable {
+    private @NonNull MemorySegment createDict(@NonNull Arena arena, MemorySegment @NonNull [] keys, MemorySegment @NonNull [] values) throws Throwable {
         var keysPtr = arena.allocate(ValueLayout.ADDRESS, keys.length);
         var valsPtr = arena.allocate(ValueLayout.ADDRESS, values.length);
         for (int i = 0; i < keys.length; i++) {
             keysPtr.setAtIndex(ValueLayout.ADDRESS, i, keys[i]);
             valsPtr.setAtIndex(ValueLayout.ADDRESS, i, values[i]);
         }
-        return (MemorySegment) CF_DICT_CREATE.invokeExact(MemorySegment.NULL, keysPtr, valsPtr, (long) keys.length, MemorySegment.NULL, MemorySegment.NULL);
+
+        MemorySegment dict = (MemorySegment) CF_DICT_CREATE.invokeExact(MemorySegment.NULL, keysPtr, valsPtr, (long) keys.length, KEY_CALLBACKS, VAL_CALLBACKS);
+        if (dict.address() == 0) throw new KeyerException("Failed to create dict");
+        return dict;
     }
 
     private void executeClear(MemorySegment @NonNull ... toClear) {

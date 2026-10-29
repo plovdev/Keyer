@@ -12,14 +12,14 @@ import java.util.Set;
  * Provides access to the system keychain via libsecret.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8-beta
  * @since 1.5
  */
 public class UnixKeychain implements Keychain {
     /**
      * Native bridge for Project Panama calls.
      */
-    private final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
+    private static final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
     private final String appId;
 
     /**

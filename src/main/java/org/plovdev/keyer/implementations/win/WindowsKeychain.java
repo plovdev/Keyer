@@ -12,14 +12,14 @@ import java.util.Set;
  * Stores generic credentials using the Windows Vault.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8-beta
  * @since 1.0
  */
 public class WindowsKeychain implements Keychain {
     /**
      * Native bridge for Project Panama calls.
      */
-    private final WinOsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WinOsKeychainNative();
+    private static final WindowsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WindowsKeychainNative();
     private final String appId;
 
     /**

@@ -13,14 +13,14 @@ import java.util.Set;
  * </p>
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8-beta
  * @since 1.0
  */
 public class MacKeychain implements Keychain {
     /**
      * Native bridge for Project Panama calls.
      */
-    private final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
+    private static final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
     private final String appId;
 
     public MacKeychain(String appId) {

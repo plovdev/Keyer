@@ -24,11 +24,11 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
  * generic credentials via CredReadW/CredWriteW/CredDeleteW functions.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8-beta
  * @since 1.0
  */
-public final class WinOsKeychainNative {
-    private static final Logger log = LoggerFactory.getLogger(WinOsKeychainNative.class);
+public final class WindowsKeychainNative {
+    private static final Logger log = LoggerFactory.getLogger(WindowsKeychainNative.class);
 
     private static final Arena SHARED = Arena.ofAuto();
     private static final Linker LINKER = Linker.nativeLinker();

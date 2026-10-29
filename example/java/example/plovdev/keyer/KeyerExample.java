@@ -21,7 +21,7 @@ import java.util.Objects;
  * available in Java 25 versions.</p>
  *
  * @author Anton
- * @version 1.6
+ * @version 1.8-beta
  * @since 1.0
  */
 public class KeyerExample {
@@ -37,7 +37,7 @@ public class KeyerExample {
     static void main() {
         // 1. Get the keychain instance for your application
         Keychain keychain = Keychain.getKeychain(KeyerExample.class);
-        String alias = "wallet6";
+        String alias = "wallet";
 
         // 2. Set a new password
         keychain.setPassword(alias, "123".getBytes(StandardCharsets.UTF_8));
