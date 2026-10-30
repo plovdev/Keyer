@@ -10,7 +10,10 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 import static org.plovdev.keyer.utils.NativeUtils.find;
 import static org.plovdev.keyer.utils.NativeUtils.getConstant;
@@ -280,15 +283,6 @@ public final class MacOsKeychainNative {
                 throw new KeyerException("Error to delete password", t);
             }
         }
-    }
-
-    /**
-     * Returns the set of authorization methods available on this platform.
-     *
-     * @return a set of supported authorization methods
-     */
-    public @NonNull Set<AuthorizationMethod> getAvailAuthMethods() {
-        return MacAuthHelper.supportedAuthMethods(ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED);
     }
 
     /**

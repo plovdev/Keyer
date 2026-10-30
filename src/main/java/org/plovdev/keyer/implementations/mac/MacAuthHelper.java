@@ -1,7 +1,6 @@
 package org.plovdev.keyer.implementations.mac;
 
 import org.jspecify.annotations.NonNull;
-import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.exceptions.KeyerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,14 +9,12 @@ import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Internal helper for macOS authentication and biometric hardware detection.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8-beta
  * @since 1.7
  */
 public final class MacAuthHelper {
@@ -25,24 +22,6 @@ public final class MacAuthHelper {
 
     private MacAuthHelper() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Detects hardware and software support for authentication methods.
-     *
-     * @param ctrl handle to SecAccessControlCreateWithFlags
-     * @param wu   pointer to kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-     * @return set of supported {@link AuthorizationMethod}
-     */
-    public static @NonNull Set<AuthorizationMethod> supportedAuthMethods(MethodHandle ctrl, MemorySegment wu) {
-        Set<AuthorizationMethod> methods = new HashSet<>();
-        methods.add(AuthorizationMethod.NONE);
-        methods.add(AuthorizationMethod.PASSWORD);
-
-        if (isBiometryAvailable(ctrl, wu)) {
-            methods.add(AuthorizationMethod.BIOMETRY);
-        }
-        return methods;
     }
 
     /**

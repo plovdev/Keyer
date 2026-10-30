@@ -17,6 +17,11 @@ import java.util.Set;
  */
 public class UnixKeychain implements Keychain {
     /**
+     * Supported authentication methods on unix implementation
+     */
+    private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of();
+
+    /**
      * Native bridge for Project Panama calls.
      */
     private static final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
@@ -78,6 +83,6 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
-        return Set.of(AuthorizationMethod.NONE);
+        return SUPPORTED_METHODS;
     }
 }

@@ -18,6 +18,11 @@ import java.util.Set;
  */
 public class MacKeychain implements Keychain {
     /**
+     * Supported authentication methods on macos implementation
+     */
+    private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD, AuthorizationMethod.BIOMETRY);
+
+    /**
      * Native bridge for Project Panama calls.
      */
     private static final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
@@ -72,6 +77,6 @@ public class MacKeychain implements Keychain {
      */
     @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
-        return MAC_OS_KEYCHAIN_NATIVE.getAvailAuthMethods();
+        return SUPPORTED_METHODS;
     }
 }

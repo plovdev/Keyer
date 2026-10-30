@@ -17,6 +17,11 @@ import java.util.Set;
  */
 public class WindowsKeychain implements Keychain {
     /**
+     * Supported authentication methods on Windows implementation
+     */
+    private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD);
+
+    /**
      * Native bridge for Project Panama calls.
      */
     private static final WindowsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WindowsKeychainNative();
@@ -76,6 +81,6 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public Set<AuthorizationMethod> supportedAuthMethods() {
-        return Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD);
+        return SUPPORTED_METHODS;
     }
 }
