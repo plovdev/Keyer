@@ -303,11 +303,9 @@ public final class MacOsKeychainNative {
             case AUTH_CANCELED:
                 throw new AuthenticationCanceledException(KeyerStatusCode.AUTH_CANCELED);
             case MISSING_ENTITLEMENT:
-                throw new MissingEntitlement(KeyerStatusCode.MISSING_ENTITLEMENT);
-            case ACCESS_DENIED:
+                throw new MissingEntitlement("Missing entitlenment. Code " + status, KeyerStatusCode.MISSING_ENTITLEMENT);
+            case ACCESS_DENIED, ACCESS_LOCKED:
                 throw new AccessDeniedException(KeyerStatusCode.ACCESS_DENIED);
-            case ACCESS_LOCKED:
-                throw new AccessDeniedException(KeyerStatusCode.ACCESS_LOCKED);
             default:
                 throw new KeyerException(String.format("Keyer operation failed (Code: %d)", status));
         }
