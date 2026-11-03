@@ -2,6 +2,7 @@ package org.plovdev.keyer.implementations.win;
 
 import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.Keychain;
+import org.plovdev.keyer.utils.KeychainUtils;
 
 import java.util.Set;
 
@@ -12,7 +13,7 @@ import java.util.Set;
  * Stores generic credentials using the Windows Vault.
  *
  * @author Anton
- * @version 1.8-beta
+ * @version 1.8
  * @since 1.0
  */
 public class WindowsKeychain implements Keychain {
@@ -20,11 +21,6 @@ public class WindowsKeychain implements Keychain {
      * Supported authentication methods on Windows implementation
      */
     private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD);
-
-    /**
-     * Native bridge for Project Panama calls.
-     */
-    private static final WindowsKeychainNative WIN_OS_KEYCHAIN_NATIVE = new WindowsKeychainNative();
     private final String appId;
 
     /**
@@ -41,7 +37,7 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public char[] getPassword(String alias) {
-        return WIN_OS_KEYCHAIN_NATIVE.getPassword(appId, alias);
+        return WindowsKeychainNative.getPassword(appId, alias);
     }
 
     /**
@@ -49,7 +45,7 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public byte[] getRawPassword(String alias) {
-        return WIN_OS_KEYCHAIN_NATIVE.getRawPassword(appId, alias);
+        return WindowsKeychainNative.getRawPassword(appId, alias);
     }
 
     /**
@@ -57,7 +53,8 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
-        WIN_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
+        KeychainUtils.checkAuthorizationMethod(SUPPORTED_METHODS, method);
+        WindowsKeychainNative.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -65,7 +62,8 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
-        WIN_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
+        KeychainUtils.checkAuthorizationMethod(SUPPORTED_METHODS, method);
+        WindowsKeychainNative.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -73,7 +71,7 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public void deletePassword(String alias) {
-        WIN_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
+        WindowsKeychainNative.deletePassword(appId, alias);
     }
 
     /**

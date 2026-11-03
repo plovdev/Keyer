@@ -19,12 +19,7 @@ public class UnixKeychain implements Keychain {
     /**
      * Supported authentication methods on unix implementation
      */
-    private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of();
-
-    /**
-     * Native bridge for Project Panama calls.
-     */
-    private static final UnixOsKeychainNative UNIX_OS_KEYCHAIN_NATIVE = new UnixOsKeychainNative();
+    private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of(AuthorizationMethod.NONE);
     private final String appId;
 
     /**
@@ -41,7 +36,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public char[] getPassword(String alias) {
-        return UNIX_OS_KEYCHAIN_NATIVE.getPassword(appId, alias);
+        return UnixOsKeychainNative.getPassword(appId, alias);
     }
 
     /**
@@ -49,7 +44,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public byte[] getRawPassword(String alias) {
-        return UNIX_OS_KEYCHAIN_NATIVE.getRawPassword(appId, alias);
+        return UnixOsKeychainNative.getRawPassword(appId, alias);
     }
 
     /**
@@ -58,7 +53,7 @@ public class UnixKeychain implements Keychain {
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
         KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
-        UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
+        UnixOsKeychainNative.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -67,7 +62,7 @@ public class UnixKeychain implements Keychain {
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
         KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
-        UNIX_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, newPassword);
+        UnixOsKeychainNative.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -75,7 +70,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public void deletePassword(String alias) {
-        UNIX_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
+        UnixOsKeychainNative.deletePassword(appId, alias);
     }
 
     /**

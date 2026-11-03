@@ -4,7 +4,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.exceptions.*;
-import org.plovdev.keyer.utils.NativeUtils;
+import org.plovdev.keyer.utils.CharactersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +25,8 @@ import static org.plovdev.keyer.utils.NativeUtils.getConstant;
  * CRUD operations on Generic Password items.
  *
  * @author Anton
- * @version 1.8-beta
- * @since 1.6
+ * @version 1.8
+ * @since 1.0
  */
 public final class MacOsKeychainNative {
     private static final Logger log = LoggerFactory.getLogger(MacOsKeychainNative.class);
@@ -91,7 +91,7 @@ public final class MacOsKeychainNative {
      * @param alias the account name
      * @return password as char array, or {@code null} if not found
      */
-    public char @Nullable [] getPassword(String app, String alias) {
+    public static char @Nullable [] getPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -100,7 +100,7 @@ public final class MacOsKeychainNative {
             return null;
         }
 
-        char[] password = NativeUtils.bytesToCharsUTF_8(bytes);
+        char[] password = CharactersUtils.bytesToCharsUTF_8(bytes);
         Arrays.fill(bytes, (byte) 0);
         return password;
     }
@@ -113,7 +113,7 @@ public final class MacOsKeychainNative {
      * @return password as byte array, or {@code null} if not found
      * @throws KeyerException if a native call fails unexpectedly
      */
-    public synchronized byte @Nullable [] getRawPassword(String app, String alias) {
+    public static synchronized byte @Nullable [] getRawPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -159,13 +159,13 @@ public final class MacOsKeychainNative {
      * @param method      the authorization method to use.
      * @param newPassword the password to store.
      */
-    public void setPassword(String appId, String alias, AuthorizationMethod method, char[] newPassword) {
+    public static void setPassword(String appId, String alias, AuthorizationMethod method, char[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(method);
         Objects.requireNonNull(newPassword);
 
-        byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
+        byte[] passBytes = CharactersUtils.charsUTF_8ToBytes(newPassword);
         try {
             setPassword(appId, alias, method, passBytes);
         } finally {
@@ -186,7 +186,7 @@ public final class MacOsKeychainNative {
      * @param newPassword the password as byte array.
      * @throws KeyerException if the operation fails.
      */
-    public synchronized void setPassword(String app, String alias, AuthorizationMethod method, byte[] newPassword) {
+    public static synchronized void setPassword(String app, String alias, AuthorizationMethod method, byte[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(method);
@@ -257,7 +257,7 @@ public final class MacOsKeychainNative {
      * @param alias the account name
      * @throws KeyerException if the item exists but cannot be deleted
      */
-    public synchronized void deletePassword(String app, String alias) {
+    public static synchronized void deletePassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -290,7 +290,7 @@ public final class MacOsKeychainNative {
      *
      * @param status operation status code
      */
-    private void throwException(int status) {
+    private static void throwException(int status) {
         switch (status) {
             case SUCCESS, NOT_FOUND:
                 break;
@@ -305,14 +305,14 @@ public final class MacOsKeychainNative {
         }
     }
 
-    private @NonNull MemorySegment createCFString(@NonNull Arena arena, @NonNull String str) throws Throwable {
+    private static @NonNull MemorySegment createCFString(@NonNull Arena arena, @NonNull String str) throws Throwable {
         MemorySegment chars = arena.allocateFrom(ValueLayout.JAVA_CHAR, str.toCharArray());
         MemorySegment ref = (MemorySegment) CF_STR_CREATE.invokeExact(MemorySegment.NULL, chars, (long) str.length());
         if (ref.address() == 0) throw new KeyerException("Failed to create CFString");
         return ref;
     }
 
-    private @NonNull MemorySegment createDict(@NonNull Arena arena, MemorySegment @NonNull [] keys, MemorySegment @NonNull [] values) throws Throwable {
+    private static @NonNull MemorySegment createDict(@NonNull Arena arena, MemorySegment @NonNull [] keys, MemorySegment @NonNull [] values) throws Throwable {
         var keysPtr = arena.allocate(ValueLayout.ADDRESS, keys.length);
         var valsPtr = arena.allocate(ValueLayout.ADDRESS, values.length);
         for (int i = 0; i < keys.length; i++) {
@@ -325,7 +325,7 @@ public final class MacOsKeychainNative {
         return dict;
     }
 
-    private void executeClear(MemorySegment @NonNull ... toClear) {
+    private static void executeClear(MemorySegment @NonNull ... toClear) {
         for (MemorySegment segment : toClear) {
             try {
                 CF_RELEASE.invokeExact(segment);

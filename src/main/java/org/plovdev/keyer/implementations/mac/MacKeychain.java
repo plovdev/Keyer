@@ -21,11 +21,6 @@ public class MacKeychain implements Keychain {
      * Supported authentication methods on macos implementation
      */
     private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD, AuthorizationMethod.BIOMETRY);
-
-    /**
-     * Native bridge for Project Panama calls.
-     */
-    private static final MacOsKeychainNative MAC_OS_KEYCHAIN_NATIVE = new MacOsKeychainNative();
     private final String appId;
 
     public MacKeychain(String appId) {
@@ -37,7 +32,7 @@ public class MacKeychain implements Keychain {
      */
     @Override
     public char[] getPassword(String alias) {
-        return MAC_OS_KEYCHAIN_NATIVE.getPassword(appId, alias);
+        return MacOsKeychainNative.getPassword(appId, alias);
     }
 
     /**
@@ -45,7 +40,7 @@ public class MacKeychain implements Keychain {
      */
     @Override
     public byte[] getRawPassword(String alias) {
-        return MAC_OS_KEYCHAIN_NATIVE.getRawPassword(appId, alias);
+        return MacOsKeychainNative.getRawPassword(appId, alias);
     }
 
     /**
@@ -53,7 +48,7 @@ public class MacKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
-        MAC_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, method, newPassword);
+        MacOsKeychainNative.setPassword(appId, alias, method, newPassword);
     }
 
     /**
@@ -61,7 +56,7 @@ public class MacKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
-        MAC_OS_KEYCHAIN_NATIVE.setPassword(appId, alias, method, newPassword);
+        MacOsKeychainNative.setPassword(appId, alias, method, newPassword);
     }
 
     /**
@@ -69,7 +64,7 @@ public class MacKeychain implements Keychain {
      */
     @Override
     public void deletePassword(String alias) {
-        MAC_OS_KEYCHAIN_NATIVE.deletePassword(appId, alias);
+        MacOsKeychainNative.deletePassword(appId, alias);
     }
 
     /**

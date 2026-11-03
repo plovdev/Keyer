@@ -14,7 +14,7 @@ import java.lang.invoke.MethodHandle;
  * Internal helper for macOS authentication and biometric hardware detection.
  *
  * @author Anton
- * @version 1.8-beta
+ * @version 1.8
  * @since 1.7
  */
 public final class MacAuthHelper {

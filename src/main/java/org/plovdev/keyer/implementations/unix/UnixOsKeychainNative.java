@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.plovdev.keyer.exceptions.AccessDeniedException;
 import org.plovdev.keyer.exceptions.KeyerException;
 import org.plovdev.keyer.exceptions.KeyerStatusCode;
-import org.plovdev.keyer.utils.NativeUtils;
+import org.plovdev.keyer.utils.CharactersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,7 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
  * Provides low-level access to Libsecret.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8
  * @since 1.5
  */
 public final class UnixOsKeychainNative {
@@ -39,7 +39,6 @@ public final class UnixOsKeychainNative {
     private static final MethodHandle SECRET_PASSWORD_STORE_SYNC = find(SECRET, LINKER, "secret_password_store_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_PASSWORD_CLEAR_SYNC = find(SECRET, LINKER, "secret_password_clear_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_SCHEMA_NEW = find(SECRET, LINKER, "secret_schema_new", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-    private static final MethodHandle SECRET_SCHEMA_UNREF = find(SECRET, LINKER, "secret_schema_unref", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     private static final MethodHandle G_FREE = find(SymbolLookup.libraryLookup("libglib-2.0.so", SHARED), LINKER, "g_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     private static final MemorySegment schemaRef;
@@ -53,7 +52,7 @@ public final class UnixOsKeychainNative {
     }
 
     //====ERROR CODES====\\
-    private static final int SECRET_ERROR_PROTOCOL = 1;
+    // private static final int SECRET_ERROR_PROTOCOL = 1;
     private static final int SECRET_IS_LOCKED = 2;
     private static final int NO_SUCH_OBJECT = 3;
     private static final int SECRET_ALREADY_EXISTS = 4;
@@ -68,7 +67,7 @@ public final class UnixOsKeychainNative {
      * @param alias the account name
      * @return password as char array, or {@code null} if not found
      */
-    public char @Nullable [] getPassword(String app, String alias) {
+    public static char @Nullable [] getPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -77,7 +76,7 @@ public final class UnixOsKeychainNative {
             return null;
         }
 
-        char[] password = NativeUtils.bytesToCharsUTF_8(rawBytes);
+        char[] password = CharactersUtils.bytesToCharsUTF_8(rawBytes);
         Arrays.fill(rawBytes, (byte) 0);
         return password;
     }
@@ -90,7 +89,7 @@ public final class UnixOsKeychainNative {
      * @return password as byte array, or {@code null} if not found
      * @throws KeyerException if a native call fails unexpectedly
      */
-    public synchronized byte @Nullable [] getRawPassword(String app, String alias) {
+    public static synchronized byte @Nullable [] getRawPassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -147,12 +146,12 @@ public final class UnixOsKeychainNative {
      * @param alias       the account name.
      * @param newPassword the password to store.
      */
-    public void setPassword(String app, String alias, char[] newPassword) {
+    public static void setPassword(String app, String alias, char[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
 
-        byte[] passBytes = NativeUtils.charsUTF_8ToBytes(newPassword);
+        byte[] passBytes = CharactersUtils.charsUTF_8ToBytes(newPassword);
         try {
             setPassword(app, alias, passBytes);
         } finally {
@@ -173,7 +172,7 @@ public final class UnixOsKeychainNative {
      * @throws KeyerException        if the operation fails.
      * @throws AccessDeniedException if the secret service is locked.
      */
-    public synchronized void setPassword(String app, String alias, byte[] newPassword) {
+    public static synchronized void setPassword(String app, String alias, byte[] newPassword) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
@@ -219,7 +218,7 @@ public final class UnixOsKeychainNative {
      * @throws KeyerException        if the operation fails.
      * @throws AccessDeniedException if the secret service is locked.
      */
-    public synchronized void deletePassword(String app, String alias) {
+    public static synchronized void deletePassword(String app, String alias) {
         Objects.requireNonNull(app);
         Objects.requireNonNull(alias);
 
@@ -287,7 +286,7 @@ public final class UnixOsKeychainNative {
      * @param alias account name
      * @return formatted label
      */
-    private @NonNull String formLabel(String app, String alias) {
+    private static @NonNull String formLabel(String app, String alias) {
         return String.format("%s - %s", app, alias);
     }
 
@@ -300,7 +299,7 @@ public final class UnixOsKeychainNative {
      * @throws AccessDeniedException  if status is SECRET_IS_LOCKED
      * @throws KeyerException         for all other errors
      */
-    private void throwException(String str, int status) {
+    private static void throwException(String str, int status) {
         switch (status) {
             case NO_SUCH_OBJECT:
                 throw new NoSuchElementException(str);

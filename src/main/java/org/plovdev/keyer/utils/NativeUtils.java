@@ -4,17 +4,14 @@ import org.jspecify.annotations.NonNull;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 
 /**
  * Utility class providing common operations for native interoperability,
- * primarily focused on character encoding conversions and native function linking.
+ * primarily focused on native function linking.
  *
  * @author Anton
- * @version 1.7
+ * @version 1.8
  * @since 1.0
  */
 public final class NativeUtils {
@@ -25,46 +22,6 @@ public final class NativeUtils {
      */
     private NativeUtils() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Converts a char array to a UTF-8 byte array.
-     */
-    public static byte @NonNull [] charsUTF_8ToBytes(char[] chars) {
-        ByteBuffer bb = StandardCharsets.UTF_8.encode(CharBuffer.wrap(chars));
-        byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
-        return bytes;
-    }
-
-    /**
-     * Converts a UTF-8 byte array to a char array.
-     */
-    public static char @NonNull [] bytesToCharsUTF_8(byte[] bytes) {
-        CharBuffer cb = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes));
-        char[] chars = new char[cb.remaining()];
-        cb.get(chars);
-        return chars;
-    }
-
-    /**
-     * Converts a char array to a UTF-16LE byte array.
-     */
-    public static byte @NonNull [] charsUTF_16LEToBytes(char[] chars) {
-        ByteBuffer bb = StandardCharsets.UTF_16LE.encode(CharBuffer.wrap(chars));
-        byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
-        return bytes;
-    }
-
-    /**
-     * Converts a UTF-16LE byte array to a char array.
-     */
-    public static char @NonNull [] bytesToCharsUTF_16LE(byte[] bytes) {
-        CharBuffer cb = StandardCharsets.UTF_16LE.decode(ByteBuffer.wrap(bytes));
-        char[] chars = new char[cb.remaining()];
-        cb.get(chars);
-        return chars;
     }
 
     /**

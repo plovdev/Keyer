@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import org.plovdev.keyer.exceptions.AccessDeniedException;
 import org.plovdev.keyer.exceptions.KeyerException;
 import org.plovdev.keyer.exceptions.KeyerStatusCode;
-import org.plovdev.keyer.utils.NativeUtils;
+import org.plovdev.keyer.utils.CharactersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +24,7 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
  * generic credentials via CredReadW/CredWriteW/CredDeleteW functions.
  *
  * @author Anton
- * @version 1.8-beta
+ * @version 1.8
  * @since 1.0
  */
 public final class WindowsKeychainNative {
@@ -77,7 +77,7 @@ public final class WindowsKeychainNative {
      * @param alias the credential alias (account name).
      * @return password as char array (UTF-16LE encoded), or {@code null} if not found.
      */
-    public char @Nullable [] getPassword(String appId, String alias) {
+    public static char @Nullable [] getPassword(String appId, String alias) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
 
@@ -86,7 +86,7 @@ public final class WindowsKeychainNative {
             return null;
         }
 
-        char[] password = NativeUtils.bytesToCharsUTF_16LE(rawPassword);
+        char[] password = CharactersUtils.bytesToCharsUTF_16LE(rawPassword);
         Arrays.fill(rawPassword, (byte) 0);
         return password;
     }
@@ -102,7 +102,7 @@ public final class WindowsKeychainNative {
      * @return password as byte array, or {@code null} if not found.
      * @throws KeyerException if the Windows API call fails.
      */
-    public synchronized byte @Nullable [] getRawPassword(String appId, String alias) {
+    public static synchronized byte @Nullable [] getRawPassword(String appId, String alias) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
 
@@ -155,12 +155,12 @@ public final class WindowsKeychainNative {
      * @param alias       the credential alias.
      * @param newPassword the password to store (UTF-16LE encoded).
      */
-    public void setPassword(String appId, String alias, char[] newPassword) {
+    public static void setPassword(String appId, String alias, char[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
 
-        byte[] passBytes = NativeUtils.charsUTF_16LEToBytes(newPassword);
+        byte[] passBytes = CharactersUtils.charsUTF_16LEToBytes(newPassword);
         try {
             setPassword(appId, alias, passBytes);
         } finally {
@@ -182,7 +182,7 @@ public final class WindowsKeychainNative {
      * @param newPassword the password as byte array.
      * @throws KeyerException if the Windows API call fails.
      */
-    public synchronized void setPassword(String appId, String alias, byte[] newPassword) {
+    public static synchronized void setPassword(String appId, String alias, byte[] newPassword) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
@@ -223,7 +223,7 @@ public final class WindowsKeychainNative {
      * @param alias the credential alias.
      * @throws KeyerException if the Windows API call fails.
      */
-    public synchronized void deletePassword(String appId, String alias) {
+    public static synchronized void deletePassword(String appId, String alias) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
 
@@ -236,7 +236,7 @@ public final class WindowsKeychainNative {
 
             if (delStatus == 0) {
                 int error = getLastError();
-                if (error == 1168) return;
+                if (error == NOT_FOUND) return;
                 throwException(error);
             }
         } catch (Throwable t) {
@@ -250,7 +250,7 @@ public final class WindowsKeychainNative {
      * @return last error code
      * @throws Throwable if native call fails
      */
-    private int getLastError() throws Throwable {
+    private static int getLastError() throws Throwable {
         return (int) GET_LAST_ERROR.invokeExact();
     }
 
@@ -259,7 +259,7 @@ public final class WindowsKeychainNative {
      *
      * @param status operation status code
      */
-    private void throwException(int status) {
+    private static void throwException(int status) {
         switch (status) {
             // not thorw, skip
             case 0, NOT_FOUND, ALREADY_EXISTS:
