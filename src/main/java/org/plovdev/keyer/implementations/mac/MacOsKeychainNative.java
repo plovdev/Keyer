@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -100,9 +101,11 @@ public final class MacOsKeychainNative {
             return null;
         }
 
-        char[] password = CharactersUtils.bytesToCharsUTF_8(bytes);
-        Arrays.fill(bytes, (byte) 0);
-        return password;
+        try {
+            return CharactersUtils.bytesToCharsUTF_8(bytes);
+        } finally {
+            Arrays.fill(bytes, (byte) 0);
+        }
     }
 
     /**
@@ -124,20 +127,25 @@ public final class MacOsKeychainNative {
             MemorySegment[] vals = {CLASS_GENERIC_PASSWORD, appStr, aliasStr, BOOLEAN_TRUE};
 
             MemorySegment queryDict = createDict(arena, keys, vals);
-            MemorySegment resultPtr = arena.allocate(ValueLayout.ADDRESS);
+            try {
+                MemorySegment resultPtr = arena.allocate(ValueLayout.ADDRESS);
 
-            int status = (int) GET_PASSWORD.invokeExact(queryDict, resultPtr);
-            log.debug("Password getting status: {}", status);
-            if (status == NOT_FOUND) return null;
-            throwException(status);
+                int status = (int) GET_PASSWORD.invokeExact(queryDict, resultPtr);
+                log.debug("Password getting status: {}", status);
+                if (status == NOT_FOUND) return null;
+                throwException(status);
 
-            MemorySegment cfData = resultPtr.get(ValueLayout.ADDRESS, 0);
-            long length = (long) CF_DATA_GET_LENGTH.invokeExact(cfData);
-            MemorySegment bytePtr = (MemorySegment) CF_DATA_GET_BYTE_PTR.invokeExact(cfData);
-
-            byte[] bytes = bytePtr.reinterpret(length).toArray(ValueLayout.JAVA_BYTE);
-            executeClear(cfData, appStr, aliasStr, queryDict);
-            return bytes;
+                MemorySegment cfData = resultPtr.get(ValueLayout.ADDRESS, 0);
+                try {
+                    long length = (long) CF_DATA_GET_LENGTH.invokeExact(cfData);
+                    MemorySegment bytePtr = (MemorySegment) CF_DATA_GET_BYTE_PTR.invokeExact(cfData);
+                    return bytePtr.reinterpret(length).toArray(ValueLayout.JAVA_BYTE);
+                } finally {
+                    executeClear(cfData);
+                }
+            } finally {
+                executeClear(appStr, aliasStr, queryDict);
+            }
         } catch (Throwable t) {
             if (t instanceof KeyerException ke) {
                 throw ke;
@@ -152,7 +160,6 @@ public final class MacOsKeychainNative {
      * <p>
      * Converts the char array to bytes using UTF-8 encoding and delegates
      * to {@link #setPassword(String, String, AuthorizationMethod, byte[])}.
-     * The char array is zeroed after conversion.
      *
      * @param appId       the service name.
      * @param alias       the account name.
@@ -297,7 +304,7 @@ public final class MacOsKeychainNative {
             case AUTH_CANCELED:
                 throw new AuthenticationCanceledException(KeyerStatusCode.AUTH_CANCELED);
             case MISSING_ENTITLEMENT:
-                throw new MissingEntitlement("Missing entitlenment. Code " + status, KeyerStatusCode.MISSING_ENTITLEMENT);
+                throw new MissingEntitlementException("Missing entitlement. Code " + status, KeyerStatusCode.MISSING_ENTITLEMENT);
             case ACCESS_DENIED, ACCESS_LOCKED:
                 throw new AccessDeniedException(KeyerStatusCode.ACCESS_DENIED);
             default:
@@ -306,7 +313,7 @@ public final class MacOsKeychainNative {
     }
 
     private static @NonNull MemorySegment createCFString(@NonNull Arena arena, @NonNull String str) throws Throwable {
-        MemorySegment chars = arena.allocateFrom(ValueLayout.JAVA_CHAR, str.toCharArray());
+        MemorySegment chars = arena.allocateFrom(str, StandardCharsets.UTF_16LE);
         MemorySegment ref = (MemorySegment) CF_STR_CREATE.invokeExact(MemorySegment.NULL, chars, (long) str.length());
         if (ref.address() == 0) throw new KeyerException("Failed to create CFString");
         return ref;
