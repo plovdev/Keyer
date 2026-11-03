@@ -1,6 +1,5 @@
 package org.plovdev.keyer.implementations.win;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.plovdev.keyer.exceptions.AccessDeniedException;
 import org.plovdev.keyer.exceptions.KeyerException;
@@ -11,10 +10,10 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
+import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
 import static org.plovdev.keyer.utils.NativeUtils.find;
 
 /**
@@ -30,11 +29,6 @@ import static org.plovdev.keyer.utils.NativeUtils.find;
 public final class WindowsKeychainNative {
     private static final Logger log = LoggerFactory.getLogger(WindowsKeychainNative.class);
 
-    private static final Arena SHARED = Arena.ofAuto();
-    private static final Linker LINKER = Linker.nativeLinker();
-    private static final SymbolLookup ADVAPI32 = SymbolLookup.libraryLookup("Advapi32", SHARED);
-    private static final SymbolLookup KERNEL32 = SymbolLookup.libraryLookup("Kernel32", SHARED);
-
     private static final int CRED_TYPE_GENERIC = 1;
     private static final int CRED_PERSIST_LOCAL_MACHINE = 2;
 
@@ -42,7 +36,6 @@ public final class WindowsKeychainNative {
     private static final MethodHandle SET_PASSWORD = find(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
     private static final MethodHandle DELETE_PASSWORD = find(ADVAPI32, LINKER, "CredDeleteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
     private static final MethodHandle CLEAN_PASSWORD = find(ADVAPI32, LINKER, "CredFree", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-    private static final MethodHandle GET_LAST_ERROR = find(KERNEL32, LINKER, "GetLastError", FunctionDescriptor.of(ValueLayout.JAVA_INT));
 
     //====ERROR CODES====\\
     private static final int NOT_FOUND = 1168;
@@ -256,16 +249,6 @@ public final class WindowsKeychainNative {
     }
 
     /**
-     * Retrieves last error code from Windows API.
-     *
-     * @return last error code
-     * @throws Throwable if native call fails
-     */
-    private static int getLastError() throws Throwable {
-        return (int) GET_LAST_ERROR.invokeExact();
-    }
-
-    /**
      * Throws exception from status code
      *
      * @param status operation status code
@@ -284,20 +267,5 @@ public final class WindowsKeychainNative {
             default:
                 throw new KeyerException(String.format("Failed to get password (Code: %d)", status));
         }
-    }
-
-    private static MemorySegment allocateTargetName(@NonNull Arena arena, String appId, String alias) {
-        return arena.allocateFrom(formTargetName(appId, alias), StandardCharsets.UTF_16LE);
-    }
-
-    /**
-     * Formats credential target name required by Windows Credential Manager.
-     *
-     * @param appId   application identifier
-     * @param alias credential alias name
-     * @return formatted string
-     */
-    private static @NonNull String formTargetName(String appId, String alias) {
-        return appId + ":" + alias;
     }
 }
