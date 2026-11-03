@@ -67,6 +67,13 @@ public final class WindowsKeychainNative {
             ValueLayout.ADDRESS.withName("UserName")
     );
 
+    private static final long TYPE_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Type"));
+    private static final long TARGET_NAME_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("TargetName"));
+    private static final long USER_NAME_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("UserName"));
+    private static final long CRED_BLOB_SIZE_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize"));
+    private static final long CRED_BLOB_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob"));
+    private static final long PERSIST_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Persist"));
+
     /**
      * Retrieves a password as a char array.
      * <p>
@@ -86,9 +93,11 @@ public final class WindowsKeychainNative {
             return null;
         }
 
-        char[] password = CharactersUtils.bytesToCharsUTF_16LE(rawPassword);
-        Arrays.fill(rawPassword, (byte) 0);
-        return password;
+        try {
+            return CharactersUtils.bytesToCharsUTF_16LE(rawPassword);
+        } finally {
+            Arrays.fill(rawPassword, (byte) 0);
+        }
     }
 
     /**
@@ -107,7 +116,7 @@ public final class WindowsKeychainNative {
         Objects.requireNonNull(alias);
 
         try (var arena = Arena.ofConfined()) {
-            MemorySegment targetSegment = arena.allocateFrom(formTargetName(appId, alias), StandardCharsets.UTF_16LE);
+            MemorySegment targetSegment = allocateTargetName(arena, appId, alias);
             MemorySegment credPtrSegment = arena.allocate(ValueLayout.ADDRESS);
 
             int status = (int) GET_PASSWORD.invokeExact(targetSegment, CRED_TYPE_GENERIC, 0, credPtrSegment);
@@ -122,23 +131,25 @@ public final class WindowsKeychainNative {
                 throw new KeyerException("CredRead returned NULL pointer");
             }
 
-            MemorySegment credential = itemRef.reinterpret(CREDENTIAL_LAYOUT.byteSize());
-            int blobSize = credential.get(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize")));
-            if (blobSize <= 0) {
-                CLEAN_PASSWORD.invokeExact(itemRef);
-                return new byte[0];  // Empty password
-            }
+            try {
+                MemorySegment credential = itemRef.reinterpret(CREDENTIAL_LAYOUT.byteSize());
+                int blobSize = credential.get(ValueLayout.JAVA_INT, CRED_BLOB_SIZE_OFFSET);
+                if (blobSize <= 0) {
+                    return new byte[0];  // Empty password
+                }
 
-            MemorySegment blobPtr = credential.get(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob")));
-            if (blobPtr == MemorySegment.NULL) {
-                CLEAN_PASSWORD.invokeExact(itemRef);
-                throw new KeyerException("Credential blob is NULL");
-            }
+                MemorySegment blobPtr = credential.get(ValueLayout.ADDRESS, CRED_BLOB_OFFSET);
+                if (blobPtr == MemorySegment.NULL) {
+                    throw new KeyerException("Credential blob is NULL");
+                }
 
-            MemorySegment blob = blobPtr.reinterpret(blobSize);
-            byte[] rawPassword = blob.toArray(ValueLayout.JAVA_BYTE);
-            CLEAN_PASSWORD.invokeExact(itemRef);
-            return rawPassword;
+                MemorySegment blob = blobPtr.reinterpret(blobSize);
+                return blob.toArray(ValueLayout.JAVA_BYTE);
+            } finally {
+                CLEAN_PASSWORD.invokeExact(itemRef);
+            }
+        } catch (KeyerException e) {
+            throw e;
         } catch (Throwable t) {
             throw new KeyerException("Windows CredRead failed", t);
         }
@@ -188,19 +199,18 @@ public final class WindowsKeychainNative {
         Objects.requireNonNull(newPassword);
 
         try (var arena = Arena.ofConfined()) {
-            String targetName = formTargetName(appId, alias);
-            MemorySegment targetSegment = arena.allocateFrom(targetName, StandardCharsets.UTF_16LE);
+            MemorySegment targetSegment = allocateTargetName(arena, appId, alias);
             MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPassword);
 
             MemorySegment credential = arena.allocate(CREDENTIAL_LAYOUT);
             credential.fill((byte) 0);
 
-            credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Type")), CRED_TYPE_GENERIC);
-            credential.set(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("TargetName")), targetSegment);
-            credential.set(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("UserName")), targetSegment);
-            credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlobSize")), newPassword.length);
-            credential.set(ValueLayout.ADDRESS, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob")), passwordSegment);
-            credential.set(ValueLayout.JAVA_INT, CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Persist")), CRED_PERSIST_LOCAL_MACHINE);
+            credential.set(ValueLayout.JAVA_INT, TYPE_OFFSET, CRED_TYPE_GENERIC);
+            credential.set(ValueLayout.ADDRESS, TARGET_NAME_OFFSET, targetSegment);
+            credential.set(ValueLayout.ADDRESS, USER_NAME_OFFSET, targetSegment);
+            credential.set(ValueLayout.JAVA_INT, CRED_BLOB_SIZE_OFFSET, newPassword.length);
+            credential.set(ValueLayout.ADDRESS, CRED_BLOB_OFFSET, passwordSegment);
+            credential.set(ValueLayout.JAVA_INT, PERSIST_OFFSET, CRED_PERSIST_LOCAL_MACHINE);
 
             int setStatus = (int) SET_PASSWORD.invokeExact(credential, 0);
             if (setStatus == 0) {
@@ -208,6 +218,8 @@ public final class WindowsKeychainNative {
                 throwException(error);
             }
             log.debug("Password stored in Windows Vault");
+        } catch (KeyerException e) {
+            throw e;
         } catch (Throwable t) {
             throw new KeyerException("Cannot set password", t);
         }
@@ -228,10 +240,7 @@ public final class WindowsKeychainNative {
         Objects.requireNonNull(alias);
 
         try (var arena = Arena.ofConfined()) {
-            String targetName = formTargetName(appId, alias);
-            MemorySegment targetSegment = arena.allocateFrom(targetName, StandardCharsets.UTF_16LE);
-
-            int delStatus = (int) DELETE_PASSWORD.invokeExact(targetSegment, CRED_TYPE_GENERIC, 0);
+            int delStatus = (int) DELETE_PASSWORD.invokeExact(allocateTargetName(arena, appId, alias), CRED_TYPE_GENERIC, 0);
             log.debug("Password deleting status: {}", delStatus);
 
             if (delStatus == 0) {
@@ -239,6 +248,8 @@ public final class WindowsKeychainNative {
                 if (error == NOT_FOUND) return;
                 throwException(error);
             }
+        } catch (KeyerException e) {
+            throw e;
         } catch (Throwable t) {
             throw new KeyerException("Can't delete password", t);
         }
@@ -275,14 +286,18 @@ public final class WindowsKeychainNative {
         }
     }
 
+    private static MemorySegment allocateTargetName(@NonNull Arena arena, String appId, String alias) {
+        return arena.allocateFrom(formTargetName(appId, alias), StandardCharsets.UTF_16LE);
+    }
+
     /**
      * Formats credential target name required by Windows Credential Manager.
      *
-     * @param app   application identifier
+     * @param appId   application identifier
      * @param alias credential alias name
-     * @return formatted string with null terminator
+     * @return formatted string
      */
-    private static @NonNull String formTargetName(String app, String alias) {
-        return app + ":" + alias + "\0";
+    private static @NonNull String formTargetName(String appId, String alias) {
+        return appId + ":" + alias;
     }
 }
