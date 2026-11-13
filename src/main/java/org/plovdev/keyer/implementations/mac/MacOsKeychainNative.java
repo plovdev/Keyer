@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static org.plovdev.keyer.utils.NativeUtils.find;
-import static org.plovdev.keyer.utils.NativeUtils.getConstant;
+import static org.plovdev.keyer.utils.NativeUtils.findFunction;
+import static org.plovdev.keyer.utils.NativeUtils.findConstant;
 
 /**
  * Low-level native bridge for macOS Keychain access.
@@ -45,34 +45,34 @@ public final class MacOsKeychainNative {
      */
     private static final SymbolLookup SECURITY = SymbolLookup.libraryLookup("/System/Library/Frameworks/Security.framework/Versions/A/Security", SHARED);
 
-    private static final MethodHandle ADD_PASSWORD = find(SECURITY, LINKER, ADD_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle UPDATE_PASSWORD = find(SECURITY, LINKER, UPDATE_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle GET_PASSWORD = find(SECURITY, LINKER, GET_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle DELETE_PASSWORD = find(SECURITY, LINKER, DELETE_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+    private static final MethodHandle ADD_PASSWORD = findFunction(SECURITY, LINKER, ADD_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle UPDATE_PASSWORD = findFunction(SECURITY, LINKER, UPDATE_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle GET_PASSWORD = findFunction(SECURITY, LINKER, GET_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle DELETE_PASSWORD = findFunction(SECURITY, LINKER, DELETE_PASSWORD_METHOD_NAME, FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-    private static final MethodHandle CF_DICT_CREATE = find(SECURITY, LINKER, "CFDictionaryCreate", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle CF_STR_CREATE = find(SECURITY, LINKER, "CFStringCreateWithCharacters", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-    private static final MethodHandle CF_DATA_CREATE = find(SECURITY, LINKER, "CFDataCreate", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-    private static final MethodHandle CF_DATA_GET_LENGTH = find(SECURITY, LINKER, "CFDataGetLength", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-    private static final MethodHandle CF_DATA_GET_BYTE_PTR = find(SECURITY, LINKER, "CFDataGetBytePtr", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle CF_RELEASE = find(SECURITY, LINKER, "CFRelease", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    private static final MethodHandle CF_DICT_CREATE = findFunction(SECURITY, LINKER, "CFDictionaryCreate", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle CF_STR_CREATE = findFunction(SECURITY, LINKER, "CFStringCreateWithCharacters", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+    private static final MethodHandle CF_DATA_CREATE = findFunction(SECURITY, LINKER, "CFDataCreate", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+    private static final MethodHandle CF_DATA_GET_LENGTH = findFunction(SECURITY, LINKER, "CFDataGetLength", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+    private static final MethodHandle CF_DATA_GET_BYTE_PTR = findFunction(SECURITY, LINKER, "CFDataGetBytePtr", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle CF_RELEASE = findFunction(SECURITY, LINKER, "CFRelease", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-    private static final MethodHandle ACCESS_CONTROL_CREATE = find(SECURITY, LINKER, "SecAccessControlCreateWithFlags", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
+    private static final MethodHandle ACCESS_CONTROL_CREATE = findFunction(SECURITY, LINKER, "SecAccessControlCreateWithFlags", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
-    private static final MemorySegment CLASS = getConstant(SECURITY, "kSecClass");
-    private static final MemorySegment CLASS_GENERIC_PASSWORD = getConstant(SECURITY, "kSecClassGenericPassword");
-    private static final MemorySegment ATTR_SERVICE = getConstant(SECURITY, "kSecAttrService");
-    private static final MemorySegment ATTR_ACCOUNT = getConstant(SECURITY, "kSecAttrAccount");
-    private static final MemorySegment VALUE_DATA = getConstant(SECURITY, "kSecValueData");
-    private static final MemorySegment RETURN_DATA = getConstant(SECURITY, "kSecReturnData");
-    private static final MemorySegment BOOLEAN_TRUE = getConstant(SECURITY, "kCFBooleanTrue");
-    private static final MemorySegment KEY_CALLBACKS = getConstant(SECURITY, "kCFTypeDictionaryKeyCallBacks");
-    private static final MemorySegment VAL_CALLBACKS = getConstant(SECURITY, "kCFTypeDictionaryValueCallBacks");
+    private static final MemorySegment CLASS = findConstant(SECURITY, "kSecClass");
+    private static final MemorySegment CLASS_GENERIC_PASSWORD = findConstant(SECURITY, "kSecClassGenericPassword");
+    private static final MemorySegment ATTR_SERVICE = findConstant(SECURITY, "kSecAttrService");
+    private static final MemorySegment ATTR_ACCOUNT = findConstant(SECURITY, "kSecAttrAccount");
+    private static final MemorySegment VALUE_DATA = findConstant(SECURITY, "kSecValueData");
+    private static final MemorySegment RETURN_DATA = findConstant(SECURITY, "kSecReturnData");
+    private static final MemorySegment BOOLEAN_TRUE = findConstant(SECURITY, "kCFBooleanTrue");
+    private static final MemorySegment KEY_CALLBACKS = findConstant(SECURITY, "kCFTypeDictionaryKeyCallBacks");
+    private static final MemorySegment VAL_CALLBACKS = findConstant(SECURITY, "kCFTypeDictionaryValueCallBacks");
 
-    private static final MemorySegment ACCESSIBLE = getConstant(SECURITY, "kSecAttrAccessible");
-    private static final MemorySegment ACCESSIBLE_ALWAYS = getConstant(SECURITY, "kSecAttrAccessibleAlways");
-    private static final MemorySegment ACCESSIBLE_WHEN_UNLOCKED = getConstant(SECURITY, "kSecAttrAccessibleWhenUnlockedThisDeviceOnly");
-    private static final MemorySegment ACCESS_CONTROL = getConstant(SECURITY, "kSecAttrAccessControl");
+    private static final MemorySegment ACCESSIBLE = findConstant(SECURITY, "kSecAttrAccessible");
+    private static final MemorySegment ACCESSIBLE_ALWAYS = findConstant(SECURITY, "kSecAttrAccessibleAlways");
+    private static final MemorySegment ACCESSIBLE_WHEN_UNLOCKED = findConstant(SECURITY, "kSecAttrAccessibleWhenUnlockedThisDeviceOnly");
+    private static final MemorySegment ACCESS_CONTROL = findConstant(SECURITY, "kSecAttrAccessControl");
 
     //====ERROR CODES====\\
     private static final int SUCCESS = 0;

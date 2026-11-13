@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
-import static org.plovdev.keyer.utils.NativeUtils.find;
+import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**
  * Windows Credential Manager native interface using Windows API.
@@ -32,10 +32,10 @@ public final class WindowsKeychainNative {
     private static final int CRED_TYPE_GENERIC = 1;
     private static final int CRED_PERSIST_LOCAL_MACHINE = 2;
 
-    private static final MethodHandle GET_PASSWORD = find(ADVAPI32, LINKER, "CredReadW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    private static final MethodHandle SET_PASSWORD = find(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-    private static final MethodHandle DELETE_PASSWORD = find(ADVAPI32, LINKER, "CredDeleteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
-    private static final MethodHandle CLEAN_PASSWORD = find(ADVAPI32, LINKER, "CredFree", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    private static final MethodHandle GET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredReadW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+    private static final MethodHandle SET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+    private static final MethodHandle DELETE_PASSWORD = findFunction(ADVAPI32, LINKER, "CredDeleteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+    private static final MethodHandle CLEAN_PASSWORD = findFunction(ADVAPI32, LINKER, "CredFree", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     //====ERROR CODES====\\
     private static final int NOT_FOUND = 1168;
