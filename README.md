@@ -4,6 +4,7 @@
 
 ![Java Version](https://img.shields.io/badge/Java%2025-green)
 ![License](https://img.shields.io/badge/Public%20Domain-blue)
+![Native](https://img.shields.io/badge/Project%20Panama-red)
 
 ## Features
 
@@ -15,6 +16,7 @@
 ## Доступно на Maven Central
 
 ```xml
+
 <dependency>
     <groupId>io.github.plovdev</groupId>
     <artifactId>keyer</artifactId>
@@ -52,17 +54,42 @@ public class KeyerTest {
 }
 ```
 
+## Changelog
+
+### Что нового в версии 1.8?
+
+В версии **1.8** добавилась поддержка нового `AuthorizationMethod` - разблокировка по паролю.
+Теперь при сохранении пароля с `AuthMethod == PASSWORD` Keyer _запомнит_, что нужно проверить пароль.
+При получении пароля из [WCM](https://support.microsoft.com/ru-ru/windows/security/credential-manager-in-windows) произойдет проверка и пользователя попросят ввести пароль от его учетки.
+
+### MacOs
+
+В mac-реализации были **проведены улучшения** в работе с методами авторизации, но там своя спецефика, и без платных
+`entitlement` **я не могу нормально протестить**.
+
+### General
+
+Был проведен **рефакторинг** и **улучшение** кода, оптимизированы некоторые моменты.
+Так же проект **дополнился новыми тестами**.
+
 ### See also /examples and /tests
+![Examples](https://img.shields.io/badge/Examples-blue)
+![Tests](https://img.shields.io/badge/Tests-green)
 
 ## Тесты Keyer
 
 Keyer тестируется через GitHub Actions при каждом пуше в тег.
 Тестируются следующие платформы:
 
-- macOs 14
 - macOs 15
+- macOs 26
 - Windows Server 2022
-- Windows Server Latest
+- Windows Server 2025
+- Windows 11
+
+![MAC](https://img.shields.io/badge/MAC-red)
+![WINDOWS](https://img.shields.io/badge/WINDOWS-blue)
+![LINUX](https://img.shields.io/badge/LINUX-yellow)
 
 Локально тестируется на реальном железе:
 
