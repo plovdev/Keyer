@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.VarHandle;
 import java.util.NoSuchElementException;
 
 /**
@@ -24,6 +25,10 @@ public final class NativeUtils {
         throw new UnsupportedOperationException();
     }
 
+    public static @NonNull VarHandle findVarHandle(@NonNull StructLayout layout, @NonNull String name) {
+        return layout.varHandle(MemoryLayout.PathElement.groupElement(name));
+    }
+
     /**
      * Finds and links a native function by name.
      *
@@ -32,8 +37,8 @@ public final class NativeUtils {
      * @return linked MethodHandle
      * @throws NoSuchElementException if the function not found
      */
-    public static @NonNull MethodHandle find(@NonNull SymbolLookup lookup, Linker linker, String name, FunctionDescriptor desc) {
-        return lookup.find(name).map(s -> linker.downcallHandle(s, desc)).orElseThrow(() -> new NoSuchElementException("Function not found: " + name));
+    public static @NonNull MethodHandle findFunction(@NonNull SymbolLookup lookup, Linker linker, String name, FunctionDescriptor desc, Linker.Option... options) {
+        return lookup.find(name).map(s -> linker.downcallHandle(s, desc, options)).orElseThrow(() -> new NoSuchElementException("Function not found: " + name));
     }
 
     /**
@@ -43,7 +48,7 @@ public final class NativeUtils {
      * @return native constant in MemorySegment
      * @throws NoSuchElementException if the constant not found
      */
-    public static MemorySegment getConstant(@NonNull SymbolLookup lookup, String name) {
+    public static MemorySegment findConstant(@NonNull SymbolLookup lookup, String name) {
         return lookup.find(name).orElseThrow(() -> new NoSuchElementException("Constant not found: " + name)).reinterpret(8).get(ValueLayout.ADDRESS, 0);
     }
 }

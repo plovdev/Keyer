@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-import static org.plovdev.keyer.utils.NativeUtils.find;
+import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**
  * Unix/Linux native implementation using libsecret.
@@ -35,11 +35,11 @@ public final class UnixOsKeychainNative {
     private static final SymbolLookup SECRET = UnixNativeUtils.loadLibrary(SHARED);
 
     // Function descriptors for libsecret API
-    private static final MethodHandle SECRET_PASSWORD_LOOKUP_SYNC = find(SECRET, LINKER, "secret_password_lookup_sync", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle SECRET_PASSWORD_STORE_SYNC = find(SECRET, LINKER, "secret_password_store_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle SECRET_PASSWORD_CLEAR_SYNC = find(SECRET, LINKER, "secret_password_clear_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle SECRET_SCHEMA_NEW = find(SECRET, LINKER, "secret_schema_new", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-    private static final MethodHandle G_FREE = find(SymbolLookup.libraryLookup("libglib-2.0.so", SHARED), LINKER, "g_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    private static final MethodHandle SECRET_PASSWORD_LOOKUP_SYNC = findFunction(SECRET, LINKER, "secret_password_lookup_sync", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle SECRET_PASSWORD_STORE_SYNC = findFunction(SECRET, LINKER, "secret_password_store_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle SECRET_PASSWORD_CLEAR_SYNC = findFunction(SECRET, LINKER, "secret_password_clear_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+    private static final MethodHandle SECRET_SCHEMA_NEW = findFunction(SECRET, LINKER, "secret_schema_new", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+    private static final MethodHandle G_FREE = findFunction(SymbolLookup.libraryLookup("libglib-2.0.so", SHARED), LINKER, "g_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     private static final MemorySegment schemaRef;
 

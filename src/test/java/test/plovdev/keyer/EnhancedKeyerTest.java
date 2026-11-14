@@ -3,11 +3,13 @@ package test.plovdev.keyer;
 import org.junit.jupiter.api.*;
 import org.plovdev.keyer.Keychain;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class EnchahnedKeyerTest {
-    private static final String APP_ID = "KeyerApp";
+public class EnhancedKeyerTest {
+    private static final String APP_ID = UUID.randomUUID().toString();
     private static final String ALIAS = "Keyer";
 
     private static final Keychain keychain = Keychain.getKeychain(APP_ID);
