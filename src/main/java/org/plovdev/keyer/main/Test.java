@@ -4,6 +4,6 @@ import org.plovdev.keyer.implementations.win.WindowsPasswordPromptUI;
 
 public class Test {
     static void main() {
-        WindowsPasswordPromptUI.showInputPasswordDialog();
+        WindowsPasswordPromptUI.showInputPasswordDialog().ifPresent(chars -> System.out.println(new String(chars)));
     }
 }

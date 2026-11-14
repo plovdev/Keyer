@@ -1,6 +1,7 @@
 package org.plovdev.keyer.implementations.win;
 
 import org.jspecify.annotations.NonNull;
+import org.plovdev.keyer.exceptions.KeyerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,9 +9,10 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
-import static java.lang.foreign.ValueLayout.ADDRESS;
-import static java.lang.foreign.ValueLayout.JAVA_INT;
+import static java.lang.foreign.MemorySegment.NULL;
+import static java.lang.foreign.ValueLayout.*;
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
 import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 import static org.plovdev.keyer.utils.NativeUtils.findVarHandle;
@@ -40,7 +42,10 @@ public final class WindowsPasswordPromptUI {
     ));
     private static final MethodHandle PACK_AUTH_BUFFER = findFunction(CRED_UI, LINKER, "CredPackAuthenticationBufferW", FunctionDescriptor.of(
             JAVA_INT, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS
-    ));
+    ), GET_LAST_ERROR_OPTION);
+    private static final MethodHandle UNPACK_AUTH_BUFFER = findFunction(CRED_UI, LINKER, "CredUnPackAuthenticationBufferW", FunctionDescriptor.of(
+            JAVA_INT, JAVA_INT, ADDRESS, JAVA_INT, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS
+    ), GET_LAST_ERROR_OPTION);
 
     private static final StructLayout CREDUI_INFO_STRUCT = MemoryLayout.structLayout(
             JAVA_INT.withName("cbSize"),
@@ -61,21 +66,21 @@ public final class WindowsPasswordPromptUI {
 
     static {
         CB_SIZE.set(CREDUI_INFO_SEGMENT, 0, (int) CREDUI_INFO_SEGMENT.byteSize());
-        HWND_PARENT.set(CREDUI_INFO_SEGMENT, 0, MemorySegment.NULL);
+        HWND_PARENT.set(CREDUI_INFO_SEGMENT, 0, NULL);
         PSZ_MESSAGE.set(CREDUI_INFO_SEGMENT, 0, SHARED.allocateFrom("Enter password:", StandardCharsets.UTF_16LE));
         PSZ_CAPTION.set(CREDUI_INFO_SEGMENT, 0, SHARED.allocateFrom("Keyer", StandardCharsets.UTF_16LE));
-        HBM_BANNER.set(CREDUI_INFO_SEGMENT, 0, MemorySegment.NULL);
+        HBM_BANNER.set(CREDUI_INFO_SEGMENT, 0, NULL);
     }
 
     private WindowsPasswordPromptUI() {
     }
 
-    private static MemorySegment prepareAuthBuffer(@NonNull Arena arena) throws Throwable {
+    private static MemorySegment packAuthBuffer(@NonNull Arena arena) throws Throwable {
         MemorySegment userNameSegment = arena.allocateFrom(System.getProperty("user.name"), StandardCharsets.UTF_16LE);
         MemorySegment passwordSegment = arena.allocateFrom("", StandardCharsets.UTF_16LE);
 
         MemorySegment requiredSizeSegment = arena.allocate(JAVA_INT);
-        int result1 = (int) PACK_AUTH_BUFFER.invokeExact(CRED_PACK_GENERIC_CREDENTIALS, userNameSegment, passwordSegment, MemorySegment.NULL, requiredSizeSegment);
+        int result1 = (int) PACK_AUTH_BUFFER.invokeExact(/* IGNORE AT FIRST TIME */ arena.allocate(CAPTURED_STATE_LAYOUT), CRED_PACK_GENERIC_CREDENTIALS, userNameSegment, passwordSegment, NULL, requiredSizeSegment);
 
         int requiredSize = requiredSizeSegment.get(JAVA_INT, 0);
         if (requiredSize <= 0) {
@@ -83,31 +88,77 @@ public final class WindowsPasswordPromptUI {
         }
 
         MemorySegment authBuffer = arena.allocate(requiredSize);
-        int result2 = (int) PACK_AUTH_BUFFER.invokeExact(CRED_PACK_GENERIC_CREDENTIALS, userNameSegment, passwordSegment, authBuffer, requiredSizeSegment);
+        MemorySegment lastError = arena.allocate(CAPTURED_STATE_LAYOUT);
+        int result2 = (int) PACK_AUTH_BUFFER.invokeExact(lastError, CRED_PACK_GENERIC_CREDENTIALS, userNameSegment, passwordSegment, authBuffer, requiredSizeSegment);
         if (result2 == 0) {
-            throw new IllegalStateException("CredPackAuthenticationBufferW failed");
+            throwException(getLastError(lastError));
         }
 
         return authBuffer;
     }
 
-    public static int showInputPasswordDialog() {
+    private static char @NonNull [] unpackAuthBuffer(@NonNull Arena arena, MemorySegment authBuffer, int authBufferSize) throws Throwable {
+        try {
+            MemorySegment userNameSize = arena.allocate(JAVA_INT);
+            MemorySegment passwordSize = arena.allocate(JAVA_INT);
+
+            int result1 = (int) UNPACK_AUTH_BUFFER.invokeExact(/* IGNORE AT FIRST TIME */ arena.allocate(CAPTURED_STATE_LAYOUT), 0, authBuffer, authBufferSize, NULL, userNameSize, NULL, NULL, NULL, passwordSize);
+
+            int usernameCharsCount = userNameSize.get(JAVA_INT, 0);
+            int passwordCharsCount = passwordSize.get(JAVA_INT, 0);
+            if (usernameCharsCount <= 0 || passwordCharsCount <= 0) {
+                throw new IllegalStateException("Failed to calculate required sizes");
+            }
+
+            MemorySegment usernameSegment = arena.allocate(JAVA_CHAR, usernameCharsCount);
+            MemorySegment passwordSegment = arena.allocate(JAVA_CHAR, passwordCharsCount);
+            try {
+                MemorySegment lastError = arena.allocate(CAPTURED_STATE_LAYOUT);
+                int result2 = (int) UNPACK_AUTH_BUFFER.invokeExact(lastError, 0, authBuffer, authBufferSize, usernameSegment, userNameSize, NULL, NULL, passwordSegment, passwordSize);
+                if (result2 == 0) {
+                    throwException(getLastError(lastError));
+                }
+
+                int length = passwordCharsCount - 1;
+                char[] passwordChars = new char[length];
+                MemorySegment.copy(passwordSegment, JAVA_CHAR, 0, passwordChars, 0, length);
+                return passwordChars;
+            } finally {
+                usernameSegment.fill((byte) 0);
+                passwordSegment.fill((byte) 0);
+            }
+        } finally {
+            authBuffer.reinterpret(authBufferSize).fill((byte) 0);
+            freeMemory(authBuffer);
+        }
+    }
+
+    public static @NonNull Optional<char[]> showInputPasswordDialog() {
+        //TODO: check if password specified by user
+
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment authPackage = arena.allocate(JAVA_INT);
             MemorySegment outSegment = arena.allocate(ADDRESS);
             MemorySegment sizeSegment = arena.allocate(JAVA_INT);
 
-            MemorySegment inAuthBuffer = prepareAuthBuffer(arena);
+            MemorySegment inAuthBuffer = packAuthBuffer(arena);
             int inSize = (int) inAuthBuffer.byteSize();
 
             int flags = CREDUIWIN_GENERIC | CREDUIWIN_IN_CRED_ONLY;
-            int error = (int) SHOW_INPUT_DIALOG.invokeExact(CREDUI_INFO_SEGMENT, 0, authPackage, inAuthBuffer, inSize, outSegment, sizeSegment, MemorySegment.NULL, flags);
+            int error = (int) SHOW_INPUT_DIALOG.invokeExact(CREDUI_INFO_SEGMENT, 0, authPackage, inAuthBuffer, inSize, outSegment, sizeSegment, NULL, flags);
 
             checkErrorThrows(error);
-            return error;
+            char[] password = unpackAuthBuffer(arena, outSegment.get(ADDRESS, 0), sizeSegment.get(JAVA_INT, 0));
+            //noinspection ConstantValue
+            if (password == null || password.length == 0) {
+                throw new IllegalArgumentException("Password is empty");
+            }
+
+            return Optional.of(password);
+        } catch (KeyerException | IllegalStateException | IllegalArgumentException e) {
+            throw e;
         } catch (Throwable e) {
-            log.error("Error show dialog: ", e);
-            return -1;
+            throw new KeyerException("Unable to show input password dialog", e);
         }
     }
 }

@@ -37,8 +37,8 @@ public final class NativeUtils {
      * @return linked MethodHandle
      * @throws NoSuchElementException if the function not found
      */
-    public static @NonNull MethodHandle findFunction(@NonNull SymbolLookup lookup, Linker linker, String name, FunctionDescriptor desc) {
-        return lookup.find(name).map(s -> linker.downcallHandle(s, desc)).orElseThrow(() -> new NoSuchElementException("Function not found: " + name));
+    public static @NonNull MethodHandle findFunction(@NonNull SymbolLookup lookup, Linker linker, String name, FunctionDescriptor desc, Linker.Option... options) {
+        return lookup.find(name).map(s -> linker.downcallHandle(s, desc, options)).orElseThrow(() -> new NoSuchElementException("Function not found: " + name));
     }
 
     /**

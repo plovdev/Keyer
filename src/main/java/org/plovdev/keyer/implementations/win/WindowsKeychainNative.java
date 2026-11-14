@@ -1,9 +1,7 @@
 package org.plovdev.keyer.implementations.win;
 
 import org.jspecify.annotations.Nullable;
-import org.plovdev.keyer.exceptions.AccessDeniedException;
 import org.plovdev.keyer.exceptions.KeyerException;
-import org.plovdev.keyer.exceptions.KeyerStatusCode;
 import org.plovdev.keyer.utils.CharactersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +34,6 @@ public final class WindowsKeychainNative {
     private static final MethodHandle SET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
     private static final MethodHandle DELETE_PASSWORD = findFunction(ADVAPI32, LINKER, "CredDeleteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
     private static final MethodHandle CLEAN_PASSWORD = findFunction(ADVAPI32, LINKER, "CredFree", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    //====ERROR CODES====\\
-    private static final int NOT_FOUND = 1168;
-    private static final int ACCESS_DENIED = 5;
-    private static final int INVALID_PARAMETER = 87;
-    private static final int ALREADY_EXISTS = 1310;
-    private static final int CALL_NOT_IMPLEMENTED = 120;
 
     private static final StructLayout CREDENTIAL_LAYOUT = MemoryLayout.structLayout(
             ValueLayout.JAVA_INT.withName("Flags"),
@@ -114,7 +105,7 @@ public final class WindowsKeychainNative {
 
             int status = (int) GET_PASSWORD.invokeExact(targetSegment, CRED_TYPE_GENERIC, 0, credPtrSegment);
             if (status == 0) {
-                int errorCode = getLastError();
+                int errorCode = getLastErrorLegacy();
                 if (errorCode == NOT_FOUND) return null;
                 throwException(errorCode);
             }
@@ -207,7 +198,7 @@ public final class WindowsKeychainNative {
 
             int setStatus = (int) SET_PASSWORD.invokeExact(credential, 0);
             if (setStatus == 0) {
-                int error = getLastError();
+                int error = getLastErrorLegacy();
                 throwException(error);
             }
             log.debug("Password stored in Windows Vault");
@@ -221,7 +212,7 @@ public final class WindowsKeychainNative {
     /**
      * Deletes a credential from Windows Credential Manager.
      * <p>
-     * If the credential does not exist ({@link #NOT_FOUND}), the operation
+     * If the credential does not exist, the operation
      * succeeds silently.
      *
      * @param appId the application identifier.
@@ -237,7 +228,7 @@ public final class WindowsKeychainNative {
             log.debug("Password deleting status: {}", delStatus);
 
             if (delStatus == 0) {
-                int error = getLastError();
+                int error = getLastErrorLegacy();
                 if (error == NOT_FOUND) return;
                 throwException(error);
             }
@@ -245,27 +236,6 @@ public final class WindowsKeychainNative {
             throw e;
         } catch (Throwable t) {
             throw new KeyerException("Can't delete password", t);
-        }
-    }
-
-    /**
-     * Throws exception from status code
-     *
-     * @param status operation status code
-     */
-    private static void throwException(int status) {
-        switch (status) {
-            // not thorw, skip
-            case 0, NOT_FOUND, ALREADY_EXISTS:
-                break;
-            case ACCESS_DENIED:
-                throw new AccessDeniedException(KeyerStatusCode.ACCESS_DENIED);
-            case INVALID_PARAMETER:
-                throw new IllegalArgumentException();
-            case CALL_NOT_IMPLEMENTED:
-                throw new UnsupportedOperationException("Call not implemented");
-            default:
-                throw new KeyerException(String.format("Failed to get password (Code: %d)", status));
         }
     }
 }
