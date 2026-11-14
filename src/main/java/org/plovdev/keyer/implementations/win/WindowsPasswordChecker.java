@@ -1,6 +1,7 @@
 package org.plovdev.keyer.implementations.win;
 
 import org.plovdev.keyer.exceptions.KeyerException;
+import org.plovdev.keyer.exceptions.VerificationFailedException;
 import org.plovdev.keyer.exceptions.VerificationPasswordNotSpecified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.invoke.MethodHandle;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static java.lang.foreign.ValueLayout.*;
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
@@ -33,6 +35,8 @@ public final class WindowsPasswordChecker {
             return !checkPassword(new char[0]);
         } catch (VerificationPasswordNotSpecified e) {
             return false;
+        } catch (VerificationFailedException e) {
+            return true;
         }
     }
 
@@ -69,6 +73,8 @@ public final class WindowsPasswordChecker {
             throw e;
         } catch (Throwable e) {
             throw new KeyerException("Unable to verify password", e);
+        } finally {
+            Arrays.fill(passwordChars, '\u0000');
         }
     }
 }

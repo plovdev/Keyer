@@ -30,9 +30,9 @@ public final class WindowsKeychainNative {
     private static final int CRED_TYPE_GENERIC = 1;
     private static final int CRED_PERSIST_LOCAL_MACHINE = 2;
 
-    private static final MethodHandle GET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredReadW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    private static final MethodHandle SET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-    private static final MethodHandle DELETE_PASSWORD = findFunction(ADVAPI32, LINKER, "CredDeleteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+    private static final MethodHandle GET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredReadW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS), GET_LAST_ERROR_OPTION);
+    private static final MethodHandle SET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT), GET_LAST_ERROR_OPTION);
+    private static final MethodHandle DELETE_PASSWORD = findFunction(ADVAPI32, LINKER, "CredDeleteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT), GET_LAST_ERROR_OPTION);
     private static final MethodHandle CLEAN_PASSWORD = findFunction(ADVAPI32, LINKER, "CredFree", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     private static final StructLayout CREDENTIAL_LAYOUT = MemoryLayout.structLayout(
@@ -103,9 +103,10 @@ public final class WindowsKeychainNative {
             MemorySegment targetSegment = allocateTargetName(arena, appId, alias);
             MemorySegment credPtrSegment = arena.allocate(ValueLayout.ADDRESS);
 
-            int status = (int) GET_PASSWORD.invokeExact(targetSegment, CRED_TYPE_GENERIC, 0, credPtrSegment);
+            MemorySegment lastError = arena.allocate(CAPTURED_STATE_LAYOUT);
+            int status = (int) GET_PASSWORD.invokeExact(lastError, targetSegment, CRED_TYPE_GENERIC, 0, credPtrSegment);
             if (status == 0) {
-                int errorCode = getLastErrorLegacy();
+                int errorCode = getLastError(lastError);
                 if (errorCode == NOT_FOUND) return null;
                 throwException(errorCode);
             }
@@ -185,23 +186,25 @@ public final class WindowsKeychainNative {
         try (var arena = Arena.ofConfined()) {
             MemorySegment targetSegment = allocateTargetName(arena, appId, alias);
             MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPassword);
+            try {
+                MemorySegment credential = arena.allocate(CREDENTIAL_LAYOUT);
+                credential.set(ValueLayout.JAVA_INT, TYPE_OFFSET, CRED_TYPE_GENERIC);
+                credential.set(ValueLayout.ADDRESS, TARGET_NAME_OFFSET, targetSegment);
+                credential.set(ValueLayout.ADDRESS, USER_NAME_OFFSET, targetSegment);
+                credential.set(ValueLayout.JAVA_INT, CRED_BLOB_SIZE_OFFSET, newPassword.length);
+                credential.set(ValueLayout.ADDRESS, CRED_BLOB_OFFSET, passwordSegment);
+                credential.set(ValueLayout.JAVA_INT, PERSIST_OFFSET, CRED_PERSIST_LOCAL_MACHINE);
 
-            MemorySegment credential = arena.allocate(CREDENTIAL_LAYOUT);
-            credential.fill((byte) 0);
-
-            credential.set(ValueLayout.JAVA_INT, TYPE_OFFSET, CRED_TYPE_GENERIC);
-            credential.set(ValueLayout.ADDRESS, TARGET_NAME_OFFSET, targetSegment);
-            credential.set(ValueLayout.ADDRESS, USER_NAME_OFFSET, targetSegment);
-            credential.set(ValueLayout.JAVA_INT, CRED_BLOB_SIZE_OFFSET, newPassword.length);
-            credential.set(ValueLayout.ADDRESS, CRED_BLOB_OFFSET, passwordSegment);
-            credential.set(ValueLayout.JAVA_INT, PERSIST_OFFSET, CRED_PERSIST_LOCAL_MACHINE);
-
-            int setStatus = (int) SET_PASSWORD.invokeExact(credential, 0);
-            if (setStatus == 0) {
-                int error = getLastErrorLegacy();
-                throwException(error);
+                MemorySegment lastError = arena.allocate(CAPTURED_STATE_LAYOUT);
+                int setStatus = (int) SET_PASSWORD.invokeExact(lastError, credential, 0);
+                if (setStatus == 0) {
+                    int error = getLastError(lastError);
+                    throwException(error);
+                }
+                log.debug("Password stored in Windows Vault");
+            } finally {
+                passwordSegment.fill((byte) 0);
             }
-            log.debug("Password stored in Windows Vault");
         } catch (KeyerException e) {
             throw e;
         } catch (Throwable t) {
@@ -224,11 +227,12 @@ public final class WindowsKeychainNative {
         Objects.requireNonNull(alias);
 
         try (var arena = Arena.ofConfined()) {
-            int delStatus = (int) DELETE_PASSWORD.invokeExact(allocateTargetName(arena, appId, alias), CRED_TYPE_GENERIC, 0);
+            MemorySegment lastError = arena.allocate(CAPTURED_STATE_LAYOUT);
+            int delStatus = (int) DELETE_PASSWORD.invokeExact(lastError, allocateTargetName(arena, appId, alias), CRED_TYPE_GENERIC, 0);
             log.debug("Password deleting status: {}", delStatus);
 
             if (delStatus == 0) {
-                int error = getLastErrorLegacy();
+                int error = getLastError(lastError);
                 if (error == NOT_FOUND) return;
                 throwException(error);
             }
