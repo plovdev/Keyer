@@ -54,7 +54,7 @@ public class WindowsKeychain implements Keychain {
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
         KeychainUtils.checkAuthorizationMethod(SUPPORTED_METHODS, method);
-        WindowsKeychainNative.setPassword(appId, alias, newPassword);
+        WindowsKeychainNative.setPassword(appId, alias, newPassword, method);
     }
 
     /**
@@ -63,7 +63,7 @@ public class WindowsKeychain implements Keychain {
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
         KeychainUtils.checkAuthorizationMethod(SUPPORTED_METHODS, method);
-        WindowsKeychainNative.setPassword(appId, alias, newPassword);
+        WindowsKeychainNative.setPassword(appId, alias, newPassword, method);
     }
 
     /**

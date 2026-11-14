@@ -52,28 +52,12 @@ public final class WindowsNativeUtils {
         }
     }
 
-    static boolean checkError(int error) {
-        return error == 0;
-    }
-
     static void freeMemory(MemorySegment pointer) {
         try {
             CO_TASK_MEM_FREE.invokeExact(pointer);
         } catch (Throwable e) {
             throw new KeyerException("Unable to free memory: ", e);
         }
-    }
-
-    /**
-     * Retrieves last error code from Windows API.
-     *
-     * @return last error code
-     * @throws Throwable if native call fails
-     */
-    //TODO: remove this
-    @Deprecated(forRemoval = true)
-    static int getLastErrorLegacy() throws Throwable {
-        return (int) GET_LAST_ERROR.invokeExact();
     }
 
     /**
@@ -104,7 +88,7 @@ public final class WindowsNativeUtils {
             case LOGON_FAILURE:
                 throw new VerificationFailedException("Verification password is incorrect");
             case ACCOUNT_RESTRICTION:
-                throw new VerificationPasswordNotSpecified();
+                throw new VerificationPasswordNotSpecifiedException();
             default:
                 throw new KeyerException(String.format("Failed to get password (Code: %d)", status));
         }

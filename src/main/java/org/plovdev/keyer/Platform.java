@@ -44,12 +44,12 @@ public enum Platform {
      * @return the detected {@link Platform} enum value.
      */
     public static Platform guessPlatform() {
-        String osName = System.getProperty("os.name").trim().toLowerCase();
-        if (osName.contains("mac")) {
+        String osName = System.getProperty("os.name").strip().toLowerCase();
+        if (osName.contains("mac") || osName.equals("darwin")) {
             return Platform.MAC;
         } else if (osName.contains("win")) {
             return Platform.WINDOWS;
-        } else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
+        } else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix") || osName.contains("bsd")) {
             return Platform.UNIX;
         }
         return Platform.OTHER;

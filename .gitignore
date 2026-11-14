@@ -6,7 +6,5 @@ target
 *.iml
 *.ipr
 
-src/main/java/org/plovdev/keyer/main/**
-
 ### Mac OS ###
 .DS_Store

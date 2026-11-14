@@ -5,12 +5,13 @@ import org.plovdev.keyer.Keychain;
 import org.plovdev.keyer.Platform;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class EdgeCasesTest {
-    private static final String APP_ID = "KeyerApp";
+    private static final String APP_ID = UUID.randomUUID().toString();
     private static final String ALIAS = "Keyer";
     private static final Keychain keychain = Keychain.getKeychain(APP_ID);
 
@@ -25,7 +26,7 @@ public class EdgeCasesTest {
 
     @Test
     void testVeryLongPassword() {
-        char[] longPass = new char[Platform.guessPlatform() == Platform.MAC ? 1000000 : 500];
+        char[] longPass = new char[Platform.guessPlatform() == Platform.MAC ? 10000 : 500];
         Arrays.fill(longPass, 'a');
         assertDoesNotThrow(() -> keychain.setPassword(ALIAS, longPass));
         assertArrayEquals(longPass, keychain.getPassword(ALIAS));

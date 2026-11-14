@@ -25,19 +25,6 @@ public final class MacAuthHelper {
     }
 
     /**
-     * Checks if biometric sensors are present and accessible.
-     */
-    private static boolean isBiometryAvailable(MethodHandle controlCreate, MemorySegment whenUnlocked) {
-        try {
-            createAccessControl(Arena.ofConfined(), controlCreate, whenUnlocked);
-            return true;
-        } catch (Throwable ignored) {
-            log.debug("Biometry is not available");
-        }
-        return false;
-    }
-
-    /**
      * Creates a native SecAccessControl object requiring User Presence (Biometrics/Password).
      *
      * @return pointer to SecAccessControlRef

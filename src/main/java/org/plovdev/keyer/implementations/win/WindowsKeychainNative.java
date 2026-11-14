@@ -1,6 +1,8 @@
 package org.plovdev.keyer.implementations.win;
 
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.plovdev.keyer.AuthorizationMethod;
 import org.plovdev.keyer.exceptions.KeyerException;
 import org.plovdev.keyer.utils.CharactersUtils;
 import org.slf4j.Logger;
@@ -8,6 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -29,6 +34,14 @@ public final class WindowsKeychainNative {
 
     private static final int CRED_TYPE_GENERIC = 1;
     private static final int CRED_PERSIST_LOCAL_MACHINE = 2;
+    private static final String AUTHENTICATION_METHOD = "AUTH_METHOD";
+
+    private static final StructLayout ATTRIBUTE_LAYOUT = MemoryLayout.structLayout(
+            ValueLayout.ADDRESS.withName("Keyword"),
+            ValueLayout.JAVA_INT.withName("Flags"),
+            ValueLayout.JAVA_INT.withName("ValueSize"),
+            ValueLayout.ADDRESS.withName("Value")
+    );
 
     private static final MethodHandle GET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredReadW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS), GET_LAST_ERROR_OPTION);
     private static final MethodHandle SET_PASSWORD = findFunction(ADVAPI32, LINKER, "CredWriteW", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT), GET_LAST_ERROR_OPTION);
@@ -50,6 +63,14 @@ public final class WindowsKeychainNative {
             ValueLayout.ADDRESS.withName("TargetAlias"),
             ValueLayout.ADDRESS.withName("UserName")
     );
+
+    private static final long ATTR_KEYWORD_OFFSET = ATTRIBUTE_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Keyword"));
+    private static final long ATTR_FLAGS_OFFSET = ATTRIBUTE_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Flags"));
+    private static final long ATTR_VALUE_SIZE_OFFSET = ATTRIBUTE_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("ValueSize"));
+    private static final long ATTR_VALUE_OFFSET = ATTRIBUTE_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Value"));
+
+    private static final long ATTR_COUNT_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("AttributeCount"));
+    private static final long ATTRIBUTES_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Attributes"));
 
     private static final long TYPE_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Type"));
     private static final long TARGET_NAME_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("TargetName"));
@@ -118,6 +139,8 @@ public final class WindowsKeychainNative {
 
             try {
                 MemorySegment credential = itemRef.reinterpret(CREDENTIAL_LAYOUT.byteSize());
+                checkAuthenticationMethod(credential);
+
                 int blobSize = credential.get(ValueLayout.JAVA_INT, CRED_BLOB_SIZE_OFFSET);
                 if (blobSize <= 0) {
                     return new byte[0];  // Empty password
@@ -140,25 +163,49 @@ public final class WindowsKeychainNative {
         }
     }
 
+    private static void checkAuthenticationMethod(@NonNull MemorySegment credential) {
+        int attrCount = credential.get(ValueLayout.JAVA_INT, ATTR_COUNT_OFFSET);
+        MemorySegment attrsPtr = credential.get(ValueLayout.ADDRESS, ATTRIBUTES_OFFSET);
+
+        if (attrCount > 0 && attrsPtr != MemorySegment.NULL) {
+            MemorySegment attr = attrsPtr.reinterpret(ATTRIBUTE_LAYOUT.byteSize());
+            int valSize = attr.get(ValueLayout.JAVA_INT, ATTR_VALUE_SIZE_OFFSET);
+            MemorySegment valPtr = attr.get(ValueLayout.ADDRESS, ATTR_VALUE_OFFSET);
+
+            if (valSize > 0 && valPtr != MemorySegment.NULL) {
+                byte[] attrBytes = valPtr.reinterpret(valSize).toArray(ValueLayout.JAVA_BYTE);
+                int authMethod = ByteBuffer.wrap(attrBytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+                if (authMethod == 0) {
+                    log.debug("No authentication method");
+                } else if (authMethod == 1) {
+                    log.debug("Auth method is password.");
+                    WindowsPasswordPromptUI.showInputPasswordDialog().ifPresent(WindowsPasswordChecker::checkPassword);
+                } else {
+                    log.debug("Unknown authentication method: {}", authMethod);
+                }
+            }
+        }
+    }
+
     /**
      * Stores a password from a char array.
      * <p>
      * Converts the char array to UTF-16LE bytes and delegates
-     * to {@link #setPassword(String, String, byte[])}.
+     * to {@link #setPassword(String, String, byte[], AuthorizationMethod)}.
      * The char array is zeroed after conversion.
      *
      * @param appId       the application identifier.
      * @param alias       the credential alias.
      * @param newPassword the password to store (UTF-16LE encoded).
      */
-    public static void setPassword(String appId, String alias, char[] newPassword) {
+    public static void setPassword(String appId, String alias, char[] newPassword, AuthorizationMethod method) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
 
         byte[] passBytes = CharactersUtils.charsUTF_16LEToBytes(newPassword);
         try {
-            setPassword(appId, alias, passBytes);
+            setPassword(appId, alias, passBytes, method);
         } finally {
             Arrays.fill(passBytes, (byte) 0);
         }
@@ -178,7 +225,7 @@ public final class WindowsKeychainNative {
      * @param newPassword the password as byte array.
      * @throws KeyerException if the Windows API call fails.
      */
-    public static synchronized void setPassword(String appId, String alias, byte[] newPassword) {
+    public static synchronized void setPassword(String appId, String alias, byte[] newPassword, AuthorizationMethod method) {
         Objects.requireNonNull(appId);
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
@@ -194,6 +241,18 @@ public final class WindowsKeychainNative {
                 credential.set(ValueLayout.JAVA_INT, CRED_BLOB_SIZE_OFFSET, newPassword.length);
                 credential.set(ValueLayout.ADDRESS, CRED_BLOB_OFFSET, passwordSegment);
                 credential.set(ValueLayout.JAVA_INT, PERSIST_OFFSET, CRED_PERSIST_LOCAL_MACHINE);
+
+                byte[] authMethodBytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(method.getValue()).array();
+                MemorySegment attrSegment = arena.allocate(ATTRIBUTE_LAYOUT);
+                MemorySegment keywordSeg = arena.allocateFrom(AUTHENTICATION_METHOD, StandardCharsets.UTF_16LE);
+                MemorySegment valueSeg = arena.allocateFrom(ValueLayout.JAVA_BYTE, authMethodBytes);
+                attrSegment.set(ValueLayout.ADDRESS, ATTR_KEYWORD_OFFSET, keywordSeg);
+                attrSegment.set(ValueLayout.JAVA_INT, ATTR_FLAGS_OFFSET, 0);
+                attrSegment.set(ValueLayout.JAVA_INT, ATTR_VALUE_SIZE_OFFSET, authMethodBytes.length);
+                attrSegment.set(ValueLayout.ADDRESS, ATTR_VALUE_OFFSET, valueSeg);
+
+                credential.set(ValueLayout.JAVA_INT, ATTR_COUNT_OFFSET, 1);
+                credential.set(ValueLayout.ADDRESS, ATTRIBUTES_OFFSET, attrSegment);
 
                 MemorySegment lastError = arena.allocate(CAPTURED_STATE_LAYOUT);
                 int setStatus = (int) SET_PASSWORD.invokeExact(lastError, credential, 0);

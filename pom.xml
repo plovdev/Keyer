@@ -40,7 +40,7 @@
         <junit.version>6.0.3</junit.version>
         <junit.scope>test</junit.scope>
         <jspec.version>1.0.0</jspec.version>
-        <jspec.scope>provided</jspec.scope>
+        <jspec.scope>compile</jspec.scope>
     </properties>
 
     <dependencies>
@@ -58,22 +58,11 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
 
         <!-- JUnit Dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>${junit.scope}</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>${junit.scope}</scope>
         </dependency>
@@ -87,6 +76,15 @@
                 <version>3.13.0</version>
                 <configuration>
                     <release>25</release>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
+                <configuration>
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
                 </configuration>
             </plugin>
 

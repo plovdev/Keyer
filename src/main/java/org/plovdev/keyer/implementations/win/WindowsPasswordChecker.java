@@ -2,7 +2,7 @@ package org.plovdev.keyer.implementations.win;
 
 import org.plovdev.keyer.exceptions.KeyerException;
 import org.plovdev.keyer.exceptions.VerificationFailedException;
-import org.plovdev.keyer.exceptions.VerificationPasswordNotSpecified;
+import org.plovdev.keyer.exceptions.VerificationPasswordNotSpecifiedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ public final class WindowsPasswordChecker {
     public static boolean isPasswordInstalled() {
         try {
             return !checkPassword(new char[0]);
-        } catch (VerificationPasswordNotSpecified e) {
+        } catch (VerificationPasswordNotSpecifiedException e) {
             return false;
         } catch (VerificationFailedException e) {
             return true;

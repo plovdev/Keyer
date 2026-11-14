@@ -12,15 +12,25 @@ public enum AuthorizationMethod {
      * No additional authorization required.
      * The item is accessible as long as the system keychain is unlocked.
      */
-    NONE,
+    NONE(0),
 
     /**
      * Requires the user to provide their system or account password.
      */
-    PASSWORD,
+    PASSWORD(1),
 
     /**
      * Requires biometric authentication (e.g., Touch ID, Face ID, or Windows Hello).
      */
-    BIOMETRY
+    BIOMETRY(2);
+
+    private final int value;
+
+    AuthorizationMethod(int value) {
+        this.value = value;
+    }
+
+    public int getValue() {
+        return value;
+    }
 }
