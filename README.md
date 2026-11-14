@@ -60,11 +60,12 @@ public class KeyerTest {
 
 В версии **1.8** добавилась поддержка нового `AuthorizationMethod` - разблокировка по паролю.
 Теперь при сохранении пароля с `AuthMethod == PASSWORD` Keyer _запомнит_, что нужно проверить пароль.
-При получении пароля из [WCM](https://support.microsoft.com/ru-ru/windows/security/credential-manager-in-windows) произойдет проверка и пользователя попросят ввести пароль от его учетки.
+При получении пароля из [WCM](https://support.microsoft.com/ru-ru/windows/security/credential-manager-in-windows)
+произойдет проверка и пользователя попросят ввести пароль от его учетки.
 
-### MacOs
+### MacOS
 
-В mac-реализации были **проведены улучшения** в работе с методами авторизации, но там своя спецефика, и без платных
+В mac-реализации были **проведены улучшения** в работе с методами авторизации, но там своя специфика, и без платных
 `entitlement` **я не могу нормально протестить**.
 
 ### General
@@ -73,8 +74,9 @@ public class KeyerTest {
 Так же проект **дополнился новыми тестами**.
 
 ### See also /examples and /tests
-![Examples](https://img.shields.io/badge/Examples-blue)
-![Tests](https://img.shields.io/badge/Tests-green)
+
+[![Examples](https://img.shields.io/badge/Examples-blue)](https://github.com/plovdev/Keyer/tree/main/example/java/example/plovdev/keyer)
+[![Tests](https://img.shields.io/badge/Tests-green)](https://github.com/plovdev/Keyer/tree/main/src/test/java/test/plovdev/keyer)
 
 ## Тесты Keyer
 
@@ -109,4 +111,15 @@ Keyer тестируется через GitHub Actions при каждом пу�
 
 Буду очень признателен, если кто-то сможет протестировать проект на Unix-системах и поделится результатом!
 
-## Не забудьте добавить --enable-native-access={MODULE-NAME} или --enable-native-access=ALL-UNNAMED в VM-OPTIONS:)
+## Пару слов о дистрибуции приложений с Keyer
+
+При упаковки вашего приложения, например через `jpackage`, не забудьте отдельный **образ JRE**.
+Это поможет **сократить вес приложения** в разы, и изолирует процесс от _несанкционированного_ доступа других процессов,
+которые используют **общую Java**.
+
+### License
+
+Keyer выпускается под [The Unlicense](https://unlicense.org).
+Пользуйтесь на здоровье!
+
+> Не забудьте добавить `--enable-native-access={MODULE-NAME}` или `--enable-native-access=ALL-UNNAMED` в **VM-OPTIONS**
