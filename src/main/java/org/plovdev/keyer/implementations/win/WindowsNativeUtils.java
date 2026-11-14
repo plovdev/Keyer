@@ -1,10 +1,7 @@
 package org.plovdev.keyer.implementations.win;
 
 import org.jspecify.annotations.NonNull;
-import org.plovdev.keyer.exceptions.AccessDeniedException;
-import org.plovdev.keyer.exceptions.AuthenticationCanceledException;
-import org.plovdev.keyer.exceptions.KeyerException;
-import org.plovdev.keyer.exceptions.KeyerStatusCode;
+import org.plovdev.keyer.exceptions.*;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -34,6 +31,8 @@ public final class WindowsNativeUtils {
     static final int INVALID_PARAMETER = 87;
     static final int ALREADY_EXISTS = 1310;
     static final int CALL_NOT_IMPLEMENTED = 120;
+    static final int LOGON_FAILURE = 1326;
+    static final int ACCOUNT_RESTRICTION = 1327;
 
     private WindowsNativeUtils() {
         throw new UnsupportedOperationException();
@@ -102,6 +101,10 @@ public final class WindowsNativeUtils {
                 throw new IllegalArgumentException();
             case CALL_NOT_IMPLEMENTED:
                 throw new UnsupportedOperationException("Call not implemented");
+            case LOGON_FAILURE:
+                throw new VerificationFailedException("Verification password is incorrect");
+            case ACCOUNT_RESTRICTION:
+                throw new VerificationPasswordNotSpecified();
             default:
                 throw new KeyerException(String.format("Failed to get password (Code: %d)", status));
         }
