@@ -1,6 +1,8 @@
 package org.plovdev.keyer.implementations.win;
 
 import org.jspecify.annotations.NonNull;
+import org.plovdev.keyer.exceptions.AuthenticationCanceledException;
+import org.plovdev.keyer.exceptions.KeyerException;
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -21,6 +23,20 @@ public final class WindowsNativeUtils {
 
     static MemorySegment allocateTargetName(@NonNull Arena arena, String appId, String alias) {
         return arena.allocateFrom(appId + ":" + alias, StandardCharsets.UTF_16LE);
+    }
+
+    static void checkErrorThrows(int error) {
+        if (error != 0) {
+            switch (error) {
+                case 87 -> throw new IllegalArgumentException("Illegal flags in function");
+                case 1223 -> throw new AuthenticationCanceledException("User has cancelled the authentication");
+                default -> throw new KeyerException("Unknown error code: " + error);
+            }
+        }
+    }
+
+    static boolean checkError(int error) {
+        return error == 0;
     }
 
     /**
