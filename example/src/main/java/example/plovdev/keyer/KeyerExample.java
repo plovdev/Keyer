@@ -4,7 +4,6 @@ import org.plovdev.keyer.Keychain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 /**
@@ -40,7 +39,7 @@ public class KeyerExample {
         String alias = "wallet";
 
         // 2. Set a new password
-        keychain.setPassword(alias, "123".getBytes(StandardCharsets.UTF_8));
+        keychain.setPassword(alias, "123".getBytes());
 
         // 3. Retrieve the password
         byte[] password = keychain.getRawPassword(alias);

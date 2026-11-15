@@ -85,7 +85,7 @@ public final class MacOsKeychainNative {
     /**
      * Retrieves a password as a char array.
      * <p>
-     * Converts the raw byte data from the Keychain to a char array using UTF-8
+     * Converts the raw byte data from the Keychain to a char array using UTF-16LE
      * decoding. The raw byte array is zeroed immediately after conversion.
      *
      * @param app   the service name (application identifier)
@@ -102,7 +102,7 @@ public final class MacOsKeychainNative {
         }
 
         try {
-            return CharactersUtils.bytesToCharsUTF_8(bytes);
+            return CharactersUtils.bytesToCharsUTF_16LE(bytes);
         } finally {
             Arrays.fill(bytes, (byte) 0);
         }
@@ -158,7 +158,7 @@ public final class MacOsKeychainNative {
     /**
      * Stores a password from a char array.
      * <p>
-     * Converts the char array to bytes using UTF-8 encoding and delegates
+     * Converts the char array to bytes using UTF-16LE encoding and delegates
      * to {@link #setPassword(String, String, AuthorizationMethod, byte[])}.
      *
      * @param appId       the service name.
@@ -172,7 +172,7 @@ public final class MacOsKeychainNative {
         Objects.requireNonNull(method);
         Objects.requireNonNull(newPassword);
 
-        byte[] passBytes = CharactersUtils.charsUTF_8ToBytes(newPassword);
+        byte[] passBytes = CharactersUtils.charsUTF_16LEToBytes(newPassword);
         try {
             setPassword(appId, alias, method, passBytes);
         } finally {

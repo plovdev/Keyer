@@ -54,6 +54,39 @@ public class KeyerTest {
 }
 ```
 
+## Chars Encodings
+
+При работе с `get/setPassword` через стандартные методы _Keychain_, используется кодировка _UTF-16LE_.
+Это значит, что вам **необходимо** будет сохранять все пароли в _UTF-16LE_, **ЕСЛИ** вы потом будете читать их через
+`getPassword`,
+так как он **конвертирует массив байт** в **массив символов** в кодировке _UTF-16LE_.
+
+При полной работе с `raw` паролями(массивами байт) вы **сами решаете** какую кодировку выбрать, если она вам нужна.
+Однако, при _декодировании_ raw пароля, прочитанного через `getRawPassword`, необходимо **учитывать ту же кодировку**,
+что
+использовалась при **сохранении**.
+
+### Пример
+
+```java
+public class KeyerEncodingTest {
+    private static final Keychain keychain = Keychain.getKeychain(KeyerEncodingTest.class);
+    private static final String APP = "APP";
+    
+    public static void processPassword(String password) {
+        byte[] raw = password.getBytes(StandardCharsets.UTF_16LE);
+        keychain.setPassword(APP, raw);
+
+        char[] chars = keychain.getPassword(APP);
+        String restored = new String(chars); // == password
+
+        // Чтение через getRawPassword - декодируем той же кодировкой
+        byte[] rawRead = keychain.getRawPassword(APP);
+        String restored2 = new String(rawRead, StandardCharsets.UTF_16LE);
+    }
+}
+```
+
 ## Changelog
 
 ### Что нового в версии 1.8?

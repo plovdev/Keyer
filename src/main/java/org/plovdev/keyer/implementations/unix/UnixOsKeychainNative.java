@@ -55,12 +55,11 @@ public final class UnixOsKeychainNative {
     // private static final int SECRET_ERROR_PROTOCOL = 1;
     private static final int SECRET_IS_LOCKED = 2;
     private static final int NO_SUCH_OBJECT = 3;
-    private static final int SECRET_ALREADY_EXISTS = 4;
 
     /**
      * Retrieves a password as a char array.
      * <p>
-     * Converts the raw byte data from the Keychain to a char array using UTF-8
+     * Converts the raw byte data from the Keychain to a char array using UTF-16LE
      * decoding. The raw byte array is zeroed immediately after conversion.
      *
      * @param app   the service name (application identifier)
@@ -76,7 +75,7 @@ public final class UnixOsKeychainNative {
             return null;
         }
 
-        char[] password = CharactersUtils.bytesToCharsUTF_8(rawBytes);
+        char[] password = CharactersUtils.bytesToCharsUTF_16LE(rawBytes);
         Arrays.fill(rawBytes, (byte) 0);
         return password;
     }
@@ -138,7 +137,7 @@ public final class UnixOsKeychainNative {
     /**
      * Stores a password from a char array.
      * <p>
-     * Converts the char array to bytes using UTF-8 encoding and delegates
+     * Converts the char array to bytes using UTF-16LE encoding and delegates
      * to {@link #setPassword(String, String, byte[])}.
      * The char array is zeroed after conversion.
      *
@@ -151,7 +150,7 @@ public final class UnixOsKeychainNative {
         Objects.requireNonNull(alias);
         Objects.requireNonNull(newPassword);
 
-        byte[] passBytes = CharactersUtils.charsUTF_8ToBytes(newPassword);
+        byte[] passBytes = CharactersUtils.charsUTF_16LEToBytes(newPassword);
         try {
             setPassword(app, alias, passBytes);
         } finally {
@@ -305,8 +304,6 @@ public final class UnixOsKeychainNative {
                 throw new NoSuchElementException(str);
             case SECRET_IS_LOCKED:
                 throw new AccessDeniedException(str, KeyerStatusCode.ACCESS_LOCKED);
-            case SECRET_ALREADY_EXISTS:
-                throw new KeyerException("Secret already exists", KeyerStatusCode.ITEM_ALREADY_EXISTS);
             default:
                 throw new KeyerException(String.format("Failed to get password (Message: %s, Code: %d)", str, status));
         }
