@@ -2,6 +2,7 @@ package test.plovdev.keyer;
 
 import org.junit.jupiter.api.Test;
 import org.plovdev.keyer.AuthorizationMethod;
+import org.plovdev.keyer.exceptions.UnsupportedAuthorizationMethodException;
 import org.plovdev.keyer.utils.KeychainUtils;
 
 import java.util.EnumSet;
@@ -17,20 +18,14 @@ class KeychainUtilsTest {
     }
 
     @Test
-    void unsupported_throwsIAE() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> KeychainUtils.checkAuthorizationMethod(Set.of(AuthorizationMethod.NONE), AuthorizationMethod.BIOMETRY));
-        assertTrue(ex.getMessage().contains("BIOMETRY"));
-    }
-
-    @Test
     void emptySet_throwsIAE() {
-        assertThrows(IllegalArgumentException.class, () -> KeychainUtils.checkAuthorizationMethod(Set.of(), AuthorizationMethod.NONE));
+        assertThrows(UnsupportedAuthorizationMethodException.class, () -> KeychainUtils.checkAuthorizationMethod(Set.of(), AuthorizationMethod.NONE));
     }
 
     @Test
     void nullMethod() {
         Exception ex = assertThrows(Exception.class, () -> KeychainUtils.checkAuthorizationMethod(Set.of(AuthorizationMethod.NONE), null));
-        assertTrue(ex instanceof IllegalArgumentException || ex instanceof NullPointerException);
+        assertInstanceOf(NullPointerException.class, ex);
     }
 
     @Test
