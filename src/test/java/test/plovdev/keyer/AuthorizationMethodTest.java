@@ -13,14 +13,14 @@ class AuthorizationMethodTest {
     @ParameterizedTest
     @EnumSource(AuthorizationMethod.class)
     void valuesMatchOrdinalAndValue(@NonNull AuthorizationMethod m) {
-        assertEquals(m.ordinal(), m.getValue());
+        assertEquals(m.ordinal(), AuthorizationMethod.getMethodNumber(m));
     }
 
     @Test
     void values() {
-        assertEquals(0, AuthorizationMethod.NONE.getValue());
-        assertEquals(1, AuthorizationMethod.PASSWORD.getValue());
-        assertEquals(2, AuthorizationMethod.BIOMETRY.getValue());
+        assertEquals(0, AuthorizationMethod.getMethodNumber(AuthorizationMethod.NONE));
+        assertEquals(1, AuthorizationMethod.getMethodNumber(AuthorizationMethod.PASSWORD));
+        assertEquals(2, AuthorizationMethod.getMethodNumber(AuthorizationMethod.BIOMETRY));
     }
 
     @Test

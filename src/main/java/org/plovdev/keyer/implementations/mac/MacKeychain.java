@@ -10,10 +10,9 @@ import java.util.Set;
  * <p>
  * This class serves as a thread-safe wrapper around {@link MacOsKeychainNative},
  * connecting the Java API to the Apple Security Framework.
- * </p>
  *
  * @author Anton
- * @version 1.8-beta
+ * @version 1.8
  * @since 1.0
  */
 public class MacKeychain implements Keychain {
@@ -23,6 +22,11 @@ public class MacKeychain implements Keychain {
     private static final Set<AuthorizationMethod> SUPPORTED_METHODS = Set.of(AuthorizationMethod.NONE, AuthorizationMethod.PASSWORD, AuthorizationMethod.BIOMETRY);
     private final String appId;
 
+    /**
+     * Constructs a new MacKeychain bound to the given application identifier.
+     *
+     * @param appId the service name used as the 'Service' attribute in Apple Keychain
+     */
     public MacKeychain(String appId) {
         this.appId = appId;
     }

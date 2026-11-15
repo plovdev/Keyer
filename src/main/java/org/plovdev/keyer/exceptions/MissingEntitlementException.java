@@ -3,8 +3,8 @@ package org.plovdev.keyer.exceptions;
 /**
  * Thrown when the application lacks the required entitlements to access Keychain features.
  *
- * @author Anton
- * @version 1.7
+ * @author PlovDev
+ * @version 1.8
  * @since 1.7
  */
 public class MissingEntitlementException extends AccessDeniedException {

@@ -6,7 +6,20 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Utility methods for converting between {@code char[]} and {@code byte[]}
+ * using UTF-8 and UTF-16LE charsets.
+ * <p>
+ * This class cannot be instantiated.
+ *
+ * @author PlovDev
+ * @version 1.8
+ * @since 1.8-beta
+ */
 public final class CharactersUtils {
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private CharactersUtils() {
         throw new UnsupportedOperationException();
     }

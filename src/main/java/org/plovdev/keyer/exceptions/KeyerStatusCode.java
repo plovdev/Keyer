@@ -3,8 +3,8 @@ package org.plovdev.keyer.exceptions;
 /**
  * Platform-independent error codes.
  *
- * @author Anton
- * @version 1.7
+ * @author PlovDev
+ * @version 1.8
  * @since 1.6
  */
 public enum KeyerStatusCode {

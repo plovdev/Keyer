@@ -3,8 +3,8 @@ package org.plovdev.keyer;
 /**
  * Supported operating system platforms for native keychain access.
  *
- * @author Anton
- * @version 1.6
+ * @author PlovDev
+ * @version 1.8
  * @since 1.0
  */
 public enum Platform {
@@ -41,7 +41,8 @@ public enum Platform {
      *     <li>{@link Platform#UNIX} - for Linux and other Unix-systems</li>
      * </ul>
      *
-     * @return the detected {@link Platform} enum value.
+     * @return the detected {@link Platform} enum value, or {@link Platform#OTHER}
+     * if the current operating system is not recognized
      */
     public static Platform guessPlatform() {
         String osName = System.getProperty("os.name").strip().toLowerCase();

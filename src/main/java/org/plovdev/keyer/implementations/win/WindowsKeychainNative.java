@@ -25,7 +25,7 @@ import static org.plovdev.keyer.utils.NativeUtils.findFunction;
  * Provides direct access to Windows Vault for storing, retrieving and deleting
  * generic credentials via CredReadW/CredWriteW/CredDeleteW functions.
  *
- * @author Anton
+ * @author PlovDev
  * @version 1.8
  * @since 1.0
  */
@@ -88,6 +88,7 @@ public final class WindowsKeychainNative {
      * @param appId the application identifier (service name).
      * @param alias the credential alias (account name).
      * @return password as char array (UTF-16LE encoded), or {@code null} if not found.
+     * @throws KeyerException if a native call fails
      */
     public static char @Nullable [] getPassword(String appId, String alias) {
         Objects.requireNonNull(appId);
@@ -163,6 +164,14 @@ public final class WindowsKeychainNative {
         }
     }
 
+    /**
+     * Reads the {@code AUTH_METHOD} attribute from the given credential.
+     * <p>
+     * If the stored authentication method is {@code PASSWORD}, the native
+     * password dialog is shown and the entered password is verified.
+     *
+     * @param credential the native credential structure
+     */
     private static void checkAuthenticationMethod(@NonNull MemorySegment credential) {
         int attrCount = credential.get(ValueLayout.JAVA_INT, ATTR_COUNT_OFFSET);
         MemorySegment attrsPtr = credential.get(ValueLayout.ADDRESS, ATTRIBUTES_OFFSET);
@@ -197,6 +206,8 @@ public final class WindowsKeychainNative {
      * @param appId       the application identifier.
      * @param alias       the credential alias.
      * @param newPassword the password to store (UTF-16LE encoded).
+     * @param method      the authorization method.
+     * @throws KeyerException if a native call fails
      */
     public static void setPassword(String appId, String alias, char[] newPassword, AuthorizationMethod method) {
         Objects.requireNonNull(appId);
@@ -223,6 +234,7 @@ public final class WindowsKeychainNative {
      * @param appId       the application identifier.
      * @param alias       the credential alias.
      * @param newPassword the password as byte array.
+     * @param method      the authorization method.
      * @throws KeyerException if the Windows API call fails.
      */
     public static synchronized void setPassword(String appId, String alias, byte[] newPassword, AuthorizationMethod method) {
@@ -242,7 +254,7 @@ public final class WindowsKeychainNative {
                 credential.set(ValueLayout.ADDRESS, CRED_BLOB_OFFSET, passwordSegment);
                 credential.set(ValueLayout.JAVA_INT, PERSIST_OFFSET, CRED_PERSIST_LOCAL_MACHINE);
 
-                byte[] authMethodBytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(method.getValue()).array();
+                byte[] authMethodBytes = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(AuthorizationMethod.getMethodNumber(method)).array();
                 MemorySegment attrSegment = arena.allocate(ATTRIBUTE_LAYOUT);
                 MemorySegment keywordSeg = arena.allocateFrom(AUTHENTICATION_METHOD, StandardCharsets.UTF_16LE);
                 MemorySegment valueSeg = arena.allocateFrom(ValueLayout.JAVA_BYTE, authMethodBytes);

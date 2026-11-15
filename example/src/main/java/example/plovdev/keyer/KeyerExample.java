@@ -19,8 +19,8 @@ import java.util.Objects;
  * <p>Note: This example uses the simplified {@code void main()} entry point
  * available in Java 25 versions.</p>
  *
- * @author Anton
- * @version 1.8-beta
+ * @author PlovDev
+ * @version 1.8
  * @since 1.0
  */
 public class KeyerExample {

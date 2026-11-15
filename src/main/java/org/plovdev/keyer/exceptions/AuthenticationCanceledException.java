@@ -6,8 +6,8 @@ package org.plovdev.keyer.exceptions;
  * This typically occurs when a user clicks the "Cancel" button in a
  * system dialog.
  *
- * @author Anton
- * @version 1.7
+ * @author PlovDev
+ * @version 1.8
  * @since 1.7
  */
 public class AuthenticationCanceledException extends AccessDeniedException {

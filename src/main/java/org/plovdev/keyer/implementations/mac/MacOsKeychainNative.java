@@ -16,8 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 import static org.plovdev.keyer.utils.NativeUtils.findConstant;
+import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**
  * Low-level native bridge for macOS Keychain access.
@@ -25,7 +25,7 @@ import static org.plovdev.keyer.utils.NativeUtils.findConstant;
  * This class interacts directly with {@code Security.framework} to perform
  * CRUD operations on Generic Password items.
  *
- * @author Anton
+ * @author PlovDev
  * @version 1.8
  * @since 1.0
  */
@@ -91,6 +91,7 @@ public final class MacOsKeychainNative {
      * @param app   the service name (application identifier)
      * @param alias the account name
      * @return password as char array, or {@code null} if not found
+     * @throws KeyerException if a native call fails
      */
     public static char @Nullable [] getPassword(String app, String alias) {
         Objects.requireNonNull(app);
@@ -165,6 +166,7 @@ public final class MacOsKeychainNative {
      * @param alias       the account name.
      * @param method      the authorization method to use.
      * @param newPassword the password to store.
+     * @throws KeyerException if the operation fails
      */
     public static void setPassword(String appId, String alias, AuthorizationMethod method, char[] newPassword) {
         Objects.requireNonNull(appId);
@@ -189,7 +191,7 @@ public final class MacOsKeychainNative {
      *
      * @param app         the service name.
      * @param alias       the account name.
-     * @param method      the authorization method (NONE, BIOMETRY).
+     * @param method      the authorization method, see {@link AuthorizationMethod}.
      * @param newPassword the password as byte array.
      * @throws KeyerException if the operation fails.
      */

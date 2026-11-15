@@ -23,8 +23,8 @@ import java.util.Set;
  * It uses the Project Panama for high-performance
  * native calls without external dependencies.
  *
- * @author Anton
- * @version 1.7
+ * @author PlovDev
+ * @version 1.8
  * @since 1.0
  */
 public interface Keychain {
@@ -35,7 +35,7 @@ public interface Keychain {
      *
      * @param cls class which use this Keychain service.
      * @return a thread-safe {@link Keychain} instance for the detected OS.
-     * @throws IllegalArgumentException if the current platform is not supported.
+     * @throws PlatformNotSupportedException if the current platform is not supported.
      */
     static @NonNull Keychain getKeychain(@NonNull Class<?> cls) {
         return getKeychain(cls.getName());
@@ -49,7 +49,7 @@ public interface Keychain {
      * @param appId a unique identifier for the application (e.g., "com.myapp.service").
      *              Used as the 'Service' attribute in native stores.
      * @return a thread-safe {@link Keychain} instance for the detected OS.
-     * @throws IllegalArgumentException if the current platform is not supported.
+     * @throws PlatformNotSupportedException if the current platform is not supported.
      */
     static @NonNull Keychain getKeychain(String appId) {
         Platform platform = Platform.guessPlatform();
@@ -57,7 +57,8 @@ public interface Keychain {
             case WINDOWS -> new WindowsKeychain(appId);
             case MAC -> new MacKeychain(appId);
             case UNIX -> new UnixKeychain(appId);
-            default -> throw new PlatformNotSupportedException("Platform " + platform.name() + " not supported", platform, KeyerStatusCode.PLATFORM_NOT_SUPPORTED);
+            default ->
+                    throw new PlatformNotSupportedException("Platform " + platform.name() + " not supported", platform, KeyerStatusCode.PLATFORM_NOT_SUPPORTED);
         };
     }
 
@@ -66,10 +67,12 @@ public interface Keychain {
      * <p>
      * Returns the secret as a {@code char[]} to allow for manual clearing
      * from memory after use, enhancing security compared to {@link String}.
+     * The stored bytes are decoded using UTF-16LE.
      *
      * @param alias the unique name or account identifier associated with the password.
      * @return a {@code char[]} containing the password, or {@code null} if the
-     * alias was not found or an error occurred.
+     * alias was not found.
+     * @throws org.plovdev.keyer.exceptions.KeyerException if a native call fails.
      */
     char[] getPassword(String alias);
 
@@ -82,7 +85,8 @@ public interface Keychain {
      *
      * @param alias the unique name or account identifier associated with the password.
      * @return a {@code byte[]} containing the password, or {@code null} if the
-     * alias was not found or an error occurred.
+     * alias was not found.
+     * @throws org.plovdev.keyer.exceptions.KeyerException if a native call fails.
      */
     byte[] getRawPassword(String alias);
 
@@ -90,9 +94,12 @@ public interface Keychain {
      * Saves or updates a password in the native store.
      * <p>
      * If an entry with the same alias already exists, it will be overwritten.
+     * The password is encoded using UTF-16LE before being stored.
+     * This method uses {@link AuthorizationMethod#NONE}.
      *
      * @param alias       the name or account identifier to associate the password with.
      * @param newPassword the password to be stored.
+     * @throws org.plovdev.keyer.exceptions.KeyerException if a native call fails.
      */
     default void setPassword(String alias, char[] newPassword) {
         setPassword(alias, newPassword, AuthorizationMethod.NONE);
@@ -104,6 +111,8 @@ public interface Keychain {
      * @param alias       the name or account identifier to associate the password with.
      * @param newPassword the password to be stored.
      * @param method      the authorization method to use (e.g., PASSWORD, BIOMETRY).
+     * @throws org.plovdev.keyer.exceptions.KeyerException                          if a native call fails.
+     * @throws org.plovdev.keyer.exceptions.UnsupportedAuthorizationMethodException if the method is not supported by the current platform.
      */
     void setPassword(String alias, char[] newPassword, AuthorizationMethod method);
 
@@ -111,9 +120,11 @@ public interface Keychain {
      * Saves or updates a password from a byte array.
      * <p>
      * If an entry with the same alias already exists, it will be overwritten.
+     * This method uses {@link AuthorizationMethod#NONE}.
      *
      * @param alias       the name or account identifier to associate the password with.
      * @param newPassword the password as a byte array.
+     * @throws org.plovdev.keyer.exceptions.KeyerException if a native call fails.
      */
     default void setPassword(String alias, byte[] newPassword) {
         setPassword(alias, newPassword, AuthorizationMethod.NONE);
@@ -125,15 +136,18 @@ public interface Keychain {
      * @param alias       the name or account identifier to associate the password with.
      * @param newPassword the password as a byte array.
      * @param method      the authorization method to use (e.g., PASSWORD, BIOMETRY).
+     * @throws org.plovdev.keyer.exceptions.KeyerException                          if a native call fails.
+     * @throws org.plovdev.keyer.exceptions.UnsupportedAuthorizationMethodException if the method is not supported by the current platform.
      */
     void setPassword(String alias, byte[] newPassword, AuthorizationMethod method);
 
     /**
      * Deletes a password from the native store.
      * <p>
-     * If the password does not exist, the operation is considered successful.
+     * If the entry does not exist, the operation is considered successful.
      *
      * @param alias the name or account identifier of the password to remove.
+     * @throws org.plovdev.keyer.exceptions.KeyerException if a native call fails
      */
     void deletePassword(String alias);
 
@@ -141,7 +155,6 @@ public interface Keychain {
      * Returns a set of authorization methods supported by the current platform.
      * <p>
      * The result depends on the operating system capabilities and available hardware.
-     * </p>
      *
      * @return an unmodifiable set of supported {@link AuthorizationMethod}s
      */

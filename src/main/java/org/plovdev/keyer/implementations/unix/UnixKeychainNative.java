@@ -1,10 +1,8 @@
 package org.plovdev.keyer.implementations.unix;
 
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.plovdev.keyer.exceptions.AccessDeniedException;
 import org.plovdev.keyer.exceptions.KeyerException;
-import org.plovdev.keyer.exceptions.KeyerStatusCode;
 import org.plovdev.keyer.utils.CharactersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,9 +10,9 @@ import org.slf4j.LoggerFactory;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import static org.plovdev.keyer.implementations.unix.UnixNativeUtils.*;
 import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**
@@ -22,13 +20,13 @@ import static org.plovdev.keyer.utils.NativeUtils.findFunction;
  * <p>
  * Provides low-level access to Libsecret.
  *
- * @author Anton
+ * @author PlovDev
  * @version 1.8
  * @since 1.5
  */
-public final class UnixOsKeychainNative {
-    private static final Logger log = LoggerFactory.getLogger(UnixOsKeychainNative.class);
-    private static final String SCHEMA_NAME = UnixNativeUtils.determineSchemeName();
+public final class UnixKeychainNative {
+    private static final Logger log = LoggerFactory.getLogger(UnixKeychainNative.class);
+    private static final String SCHEMA_NAME = UnixNativeUtils.determineSchemaName();
 
     private static final Arena SHARED = Arena.ofAuto();
     private static final Linker LINKER = Linker.nativeLinker();
@@ -38,23 +36,22 @@ public final class UnixOsKeychainNative {
     private static final MethodHandle SECRET_PASSWORD_LOOKUP_SYNC = findFunction(SECRET, LINKER, "secret_password_lookup_sync", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_PASSWORD_STORE_SYNC = findFunction(SECRET, LINKER, "secret_password_store_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_PASSWORD_CLEAR_SYNC = findFunction(SECRET, LINKER, "secret_password_clear_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    private static final MethodHandle SECRET_SCHEMA_NEW = findFunction(SECRET, LINKER, "secret_schema_new", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+    private static final MethodHandle SECRET_SCHEMA_NEW = findFunction(SECRET, LINKER, "secret_schema_new", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     private static final MethodHandle G_FREE = findFunction(SymbolLookup.libraryLookup("libglib-2.0.so", SHARED), LINKER, "g_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     private static final MemorySegment schemaRef;
 
+    /*
+    Initializes the libsecret schema reference used by all operations.
+    The schema is created once for the current application.
+    */
     static {
         try {
-            schemaRef = (MemorySegment) SECRET_SCHEMA_NEW.invokeExact(SHARED.allocateFrom(SCHEMA_NAME), 0);
+            schemaRef = (MemorySegment) SECRET_SCHEMA_NEW.invokeExact(SHARED.allocateFrom(SCHEMA_NAME), 0, MemorySegment.NULL);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
-
-    //====ERROR CODES====\\
-    // private static final int SECRET_ERROR_PROTOCOL = 1;
-    private static final int SECRET_IS_LOCKED = 2;
-    private static final int NO_SUCH_OBJECT = 3;
 
     /**
      * Retrieves a password as a char array.
@@ -65,6 +62,7 @@ public final class UnixOsKeychainNative {
      * @param app   the service name (application identifier)
      * @param alias the account name
      * @return password as char array, or {@code null} if not found
+     * @throws KeyerException if a native call fails
      */
     public static char @Nullable [] getPassword(String app, String alias) {
         Objects.requireNonNull(app);
@@ -74,10 +72,11 @@ public final class UnixOsKeychainNative {
         if (rawBytes == null) {
             return null;
         }
-
-        char[] password = CharactersUtils.bytesToCharsUTF_16LE(rawBytes);
-        Arrays.fill(rawBytes, (byte) 0);
-        return password;
+        try {
+            return CharactersUtils.bytesToCharsUTF_16LE(rawBytes);
+        } finally {
+            Arrays.fill(rawBytes, (byte) 0);
+        }
     }
 
     /**
@@ -124,11 +123,14 @@ public final class UnixOsKeychainNative {
                 size++;
             }
             MemorySegment readable = passwordSegment.reinterpret(size);
-            byte[] rawBytes = new byte[(int) size];
-            MemorySegment.copy(readable, ValueLayout.JAVA_BYTE, 0, rawBytes, 0, (int) size);
-
-            G_FREE.invokeExact(passwordSegment);
-            return rawBytes;
+            try {
+                byte[] rawBytes = new byte[(int) size];
+                MemorySegment.copy(readable, ValueLayout.JAVA_BYTE, 0, rawBytes, 0, (int) size);
+                return rawBytes;
+            } finally {
+                readable.fill((byte) 0);
+                G_FREE.invokeExact(passwordSegment);
+            }
         } catch (Throwable t) {
             throw new KeyerException("Error getting password", t);
         }
@@ -144,6 +146,7 @@ public final class UnixOsKeychainNative {
      * @param app         the service name.
      * @param alias       the account name.
      * @param newPassword the password to store.
+     * @throws KeyerException if the operation fails
      */
     public static void setPassword(String app, String alias, char[] newPassword) {
         Objects.requireNonNull(app);
@@ -180,11 +183,10 @@ public final class UnixOsKeychainNative {
             MemorySegment errorPtr = arena.allocate(ValueLayout.ADDRESS);
             MemorySegment passwordSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, newPassword);
 
-            String label = formLabel(app, alias);
             boolean success = (boolean) SECRET_PASSWORD_STORE_SYNC.invokeExact(
                     schemaRef,
                     MemorySegment.NULL,
-                    arena.allocateFrom(label),
+                    formLabel(arena, app, alias),
                     passwordSegment,
                     MemorySegment.NULL,
                     errorPtr,
@@ -247,65 +249,6 @@ public final class UnixOsKeychainNative {
             }
         } catch (Throwable t) {
             throw new KeyerException("Error deleting password", t);
-        }
-    }
-
-    /**
-     * Reads GLib error message from GError structure.
-     *
-     * @param errorPtr pointer to GError
-     * @return error message string
-     */
-    private static String readGError(@NonNull MemorySegment errorPtr) {
-        MemorySegment messagePtr = errorPtr.get(ValueLayout.ADDRESS, 0);
-        if (messagePtr.address() != 0) {
-            return messagePtr.getString(0);
-        }
-        return "Unknown GLib error";
-    }
-
-    /**
-     * Extracts error code from GError structure.
-     *
-     * @param errorPtr pointer to GError
-     * @return error code, or -1 if extraction fails
-     */
-    private static int getGErrorCode(MemorySegment errorPtr) {
-        try {
-            return errorPtr.get(ValueLayout.JAVA_INT, 8);
-        } catch (Exception e) {
-            return -1;
-        }
-    }
-
-    /**
-     * Formats label for secret item.
-     *
-     * @param app   service name
-     * @param alias account name
-     * @return formatted label
-     */
-    private static @NonNull String formLabel(String app, String alias) {
-        return String.format("%s - %s", app, alias);
-    }
-
-    /**
-     * Throws appropriate exception based on GLib error code.
-     *
-     * @param str    error message
-     * @param status GLib error code
-     * @throws NoSuchElementException if status is NO_SUCH_OBJECT
-     * @throws AccessDeniedException  if status is SECRET_IS_LOCKED
-     * @throws KeyerException         for all other errors
-     */
-    private static void throwException(String str, int status) {
-        switch (status) {
-            case NO_SUCH_OBJECT:
-                throw new NoSuchElementException(str);
-            case SECRET_IS_LOCKED:
-                throw new AccessDeniedException(str, KeyerStatusCode.ACCESS_LOCKED);
-            default:
-                throw new KeyerException(String.format("Failed to get password (Message: %s, Code: %d)", str, status));
         }
     }
 }

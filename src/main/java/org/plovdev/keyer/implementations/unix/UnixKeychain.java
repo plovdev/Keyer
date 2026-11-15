@@ -11,8 +11,8 @@ import java.util.Set;
  * <p>
  * Provides access to the system keychain via libsecret.
  *
- * @author Anton
- * @version 1.8-beta
+ * @author PlovDev
+ * @version 1.8
  * @since 1.5
  */
 public class UnixKeychain implements Keychain {
@@ -36,7 +36,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public char[] getPassword(String alias) {
-        return UnixOsKeychainNative.getPassword(appId, alias);
+        return UnixKeychainNative.getPassword(appId, alias);
     }
 
     /**
@@ -44,7 +44,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public byte[] getRawPassword(String alias) {
-        return UnixOsKeychainNative.getRawPassword(appId, alias);
+        return UnixKeychainNative.getRawPassword(appId, alias);
     }
 
     /**
@@ -53,7 +53,7 @@ public class UnixKeychain implements Keychain {
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
         KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
-        UnixOsKeychainNative.setPassword(appId, alias, newPassword);
+        UnixKeychainNative.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -62,7 +62,7 @@ public class UnixKeychain implements Keychain {
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
         KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
-        UnixOsKeychainNative.setPassword(appId, alias, newPassword);
+        UnixKeychainNative.setPassword(appId, alias, newPassword);
     }
 
     /**
@@ -70,7 +70,7 @@ public class UnixKeychain implements Keychain {
      */
     @Override
     public void deletePassword(String alias) {
-        UnixOsKeychainNative.deletePassword(appId, alias);
+        UnixKeychainNative.deletePassword(appId, alias);
     }
 
     /**

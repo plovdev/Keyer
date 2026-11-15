@@ -17,6 +17,18 @@ import static java.lang.foreign.ValueLayout.*;
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
 import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
+/**
+ * Utility for verifying Windows user credentials.
+ * <p>
+ * Uses the {@code LogonUserW} function to validate a password against the
+ * current user account.
+ * <p>
+ * This class cannot be instantiated.
+ *
+ * @author PlovDev
+ * @version 1.8
+ * @since 1.8-beta
+ */
 public final class WindowsPasswordChecker {
     private static final int LOGON_NETWORK = 3;
     private static final int LOGON_PROVIDER = 0;
@@ -27,9 +39,23 @@ public final class WindowsPasswordChecker {
     private static final MethodHandle CLOSE_HANDLE = findFunction(KERNEL32, LINKER, "CloseHandle", FunctionDescriptor.of(JAVA_INT, ADDRESS));
     private static final Logger log = LoggerFactory.getLogger(WindowsPasswordChecker.class);
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private WindowsPasswordChecker() {
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Checks whether a password is configured for the current user.
+     * <p>
+     * An empty password is used for the check: if the system reports that no
+     * password is specified, this method returns {@code false}; if the empty
+     * password does not match, it returns {@code true}.
+     *
+     * @return {@code true} if a password is configured, {@code false} otherwise
+     * @throws KeyerException if the check fails for another reason
+     */
     public static boolean isPasswordInstalled() {
         try {
             return !checkPassword(new char[0]);
@@ -40,6 +66,19 @@ public final class WindowsPasswordChecker {
         }
     }
 
+    /**
+     * Verifies the given password against the current Windows user account.
+     * <p>
+     * The provided array is cleared (filled with {@code '\u0000'}) after the
+     * verification completes, regardless of the result.
+     *
+     * @param passwordChars the password characters to verify
+     * @return {@code true} if the password is correct, {@code false} if the
+     * credential check completed without a definitive result
+     * @throws VerificationFailedException               if the password is incorrect
+     * @throws VerificationPasswordNotSpecifiedException if no password is configured
+     * @throws KeyerException                            if verification fails for another reason
+     */
     public static boolean checkPassword(char[] passwordChars) {
         try (Arena arena = Arena.ofConfined()) {
             MemorySegment userNameSegment = arena.allocateFrom(System.getProperty("user.name"), StandardCharsets.UTF_16LE);

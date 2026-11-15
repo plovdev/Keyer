@@ -12,7 +12,7 @@ import java.util.Set;
  * Provides access to Windows Credential Manager via native calls to Advapi32.dll.
  * Stores generic credentials using the Windows Vault.
  *
- * @author Anton
+ * @author PlovDev
  * @version 1.8
  * @since 1.0
  */
@@ -53,7 +53,7 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, char[] newPassword, AuthorizationMethod method) {
-        KeychainUtils.checkAuthorizationMethod(SUPPORTED_METHODS, method);
+        KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
         WindowsKeychainNative.setPassword(appId, alias, newPassword, method);
     }
 
@@ -62,7 +62,7 @@ public class WindowsKeychain implements Keychain {
      */
     @Override
     public void setPassword(String alias, byte[] newPassword, AuthorizationMethod method) {
-        KeychainUtils.checkAuthorizationMethod(SUPPORTED_METHODS, method);
+        KeychainUtils.checkAuthorizationMethod(supportedAuthMethods(), method);
         WindowsKeychainNative.setPassword(appId, alias, newPassword, method);
     }
 

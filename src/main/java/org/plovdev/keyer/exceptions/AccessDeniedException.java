@@ -11,8 +11,8 @@ package org.plovdev.keyer.exceptions;
  *     <li>Keychain is locked (macOS errSecInteractionNotAllowed)</li>
  * </ul>
  *
- * @author Anton
- * @version 1.6
+ * @author PlovDev
+ * @version 1.8
  * @since 1.6
  */
 public class AccessDeniedException extends KeyerException {

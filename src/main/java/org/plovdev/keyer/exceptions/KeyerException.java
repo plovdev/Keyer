@@ -9,8 +9,8 @@ package org.plovdev.keyer.exceptions;
  * All constructors default to {@link KeyerStatusCode#UNKNOWN_ERROR} when no
  * status code is explicitly provided.
  *
- * @author Anton
- * @version 1.6
+ * @author PlovDev
+ * @version 1.8
  * @see KeyerStatusCode
  * @since 1.6
  */
