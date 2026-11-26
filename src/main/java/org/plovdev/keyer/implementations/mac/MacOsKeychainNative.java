@@ -57,8 +57,10 @@ public final class MacOsKeychainNative {
     private static final MemorySegment BOOLEAN_TRUE = findConstant(SECURITY, "kCFBooleanTrue");
 
     private static final MemorySegment ACCESSIBLE = findConstant(SECURITY, "kSecAttrAccessible");
-    private static final MemorySegment ACCESSIBLE_ALWAYS = findConstant(SECURITY, "kSecAttrAccessibleAlways");
     private static final MemorySegment ACCESSIBLE_WHEN_UNLOCKED = findConstant(SECURITY, "kSecAttrAccessibleWhenUnlockedThisDeviceOnly");
+    private static final long ACCESS_CONTROL_BIOMETRY_CURRENT_SET = 1L << 3;
+    private static final long ACCESS_CONTROL_DEVICE_PASSCODE      = 1L << 4;
+
     private static final MemorySegment ACCESS_CONTROL = findConstant(SECURITY, "kSecAttrAccessControl");
 
     /**
@@ -196,12 +198,19 @@ public final class MacOsKeychainNative {
                 upKeys.add(VALUE_DATA);
                 upVals.add(passData);
 
-                if (method == AuthorizationMethod.BIOMETRY) {
-                    upKeys.add(ACCESS_CONTROL);
-                    upVals.add(MacOsNativeUtils.createAccessControl(arena, ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED));
-                } else {
-                    upKeys.add(ACCESSIBLE);
-                    upVals.add((method == AuthorizationMethod.NONE) ? ACCESSIBLE_ALWAYS : ACCESSIBLE_WHEN_UNLOCKED);
+                switch (method) {
+                    case BIOMETRY -> {
+                        upKeys.add(ACCESS_CONTROL);
+                        upVals.add(MacOsNativeUtils.createAccessControl(arena, ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED, ACCESS_CONTROL_BIOMETRY_CURRENT_SET));
+                    }
+                    case PASSWORD -> {
+                        upKeys.add(ACCESS_CONTROL);
+                        upVals.add(MacOsNativeUtils.createAccessControl(arena, ACCESS_CONTROL_CREATE, ACCESSIBLE_WHEN_UNLOCKED, ACCESS_CONTROL_DEVICE_PASSCODE));
+                    }
+                    case NONE -> {
+                        upKeys.add(ACCESSIBLE);
+                        upVals.add(ACCESSIBLE_WHEN_UNLOCKED);
+                    }
                 }
 
                 MemorySegment updateDict = createDict(arena, upKeys.toArray(MemorySegment[]::new), upVals.toArray(MemorySegment[]::new));

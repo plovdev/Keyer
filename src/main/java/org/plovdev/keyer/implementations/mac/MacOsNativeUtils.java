@@ -53,23 +53,15 @@ public final class MacOsNativeUtils {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Creates a native SecAccessControl object requiring User Presence (Biometrics/Password).
-     *
-     * @param arena         the arena used to allocate native memory
-     * @param controlCreate the native SecAccessControlCreateWithFlags function handle
-     * @param whenUnlocked  the accessibility constant the control is bound to
-     * @return a pointer to the created SecAccessControlRef as a {@link MemorySegment}
-     * @throws KeyerException if the native SecAccessControl object cannot be created
-     * @throws Throwable      if a native call fails
-     */
-    static @NonNull MemorySegment createAccessControl(@NonNull Arena arena, @NonNull MethodHandle controlCreate, MemorySegment whenUnlocked) throws Throwable {
+
+    static @NonNull MemorySegment createAccessControl(@NonNull Arena arena, @NonNull MethodHandle controlCreate, MemorySegment whenUnlocked, long method) throws Throwable {
         var errorPtr = arena.allocate(ValueLayout.ADDRESS);
-        MemorySegment result = (MemorySegment) controlCreate.invokeExact(MemorySegment.NULL, whenUnlocked, 2L, errorPtr);
+        MemorySegment result = (MemorySegment) controlCreate.invokeExact(MemorySegment.NULL, whenUnlocked, method, errorPtr);
         if (result.address() == 0) {
+            executeClear(errorPtr.get(ValueLayout.ADDRESS, 0));
             throw new KeyerException("Failed to create AccessControl");
         }
-        return result;
+        return result.reinterpret(arena, MacOsNativeUtils::executeClear);
     }
 
     /**
@@ -115,7 +107,9 @@ public final class MacOsNativeUtils {
     static void executeClear(MemorySegment @NonNull ... toClear) {
         for (MemorySegment segment : toClear) {
             try {
-                CF_RELEASE.invokeExact(segment);
+                if (!segment.equals(MemorySegment.NULL) && segment.address() != 0) {
+                    CF_RELEASE.invokeExact(segment);
+                }
             } catch (Throwable e) {
                 log.error("Error clear object: ", e);
             }
