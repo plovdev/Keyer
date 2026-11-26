@@ -127,7 +127,7 @@ public final class WindowsNativeUtils {
             case 0, NOT_FOUND, ALREADY_EXISTS:
                 break;
             case ACCESS_DENIED:
-                throw new AccessDeniedException(KeyerStatusCode.ACCESS_DENIED);
+                throw new AccessDeniedException();
             case INVALID_PARAMETER:
                 throw new IllegalArgumentException();
             case CALL_NOT_IMPLEMENTED:

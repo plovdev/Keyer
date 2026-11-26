@@ -1,7 +1,6 @@
 package org.plovdev.keyer;
 
 import org.jspecify.annotations.NonNull;
-import org.plovdev.keyer.exceptions.KeyerStatusCode;
 import org.plovdev.keyer.exceptions.PlatformNotSupportedException;
 import org.plovdev.keyer.implementations.mac.MacKeychain;
 import org.plovdev.keyer.implementations.unix.UnixKeychain;
@@ -58,7 +57,7 @@ public interface Keychain {
             case MAC -> new MacKeychain(appId);
             case UNIX -> new UnixKeychain(appId);
             default ->
-                    throw new PlatformNotSupportedException("Platform " + platform.name() + " not supported", platform, KeyerStatusCode.PLATFORM_NOT_SUPPORTED);
+                    throw new PlatformNotSupportedException("Platform " + platform.name() + " not supported", platform);
         };
     }
 

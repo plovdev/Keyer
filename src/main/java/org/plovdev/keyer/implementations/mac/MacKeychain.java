@@ -11,7 +11,7 @@ import java.util.Set;
  * This class serves as a thread-safe wrapper around {@link MacOsKeychainNative},
  * connecting the Java API to the Apple Security Framework.
  *
- * @author Anton
+ * @author PlovDev
  * @version 1.8
  * @since 1.0
  */

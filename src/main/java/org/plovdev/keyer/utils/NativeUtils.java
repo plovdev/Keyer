@@ -16,6 +16,8 @@ import java.util.NoSuchElementException;
  * @since 1.0
  */
 public final class NativeUtils {
+    public static final Linker LINKER = Linker.nativeLinker();
+
     /**
      * Private constructor to prevent instantiation of this utility class.
      *

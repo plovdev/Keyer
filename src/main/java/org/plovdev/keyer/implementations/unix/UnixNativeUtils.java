@@ -4,7 +4,6 @@ import org.jspecify.annotations.NonNull;
 import org.plovdev.keyer.Keychain;
 import org.plovdev.keyer.exceptions.AccessDeniedException;
 import org.plovdev.keyer.exceptions.KeyerException;
-import org.plovdev.keyer.exceptions.KeyerStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,7 +147,7 @@ public final class UnixNativeUtils {
             case NO_SUCH_OBJECT:
                 throw new NoSuchElementException(str);
             case SECRET_IS_LOCKED:
-                throw new AccessDeniedException(str, KeyerStatusCode.ACCESS_LOCKED);
+                throw new AccessDeniedException(str);
             default:
                 throw new KeyerException(String.format("Failed to get password (Message: %s, Code: %d)", str, status));
         }
