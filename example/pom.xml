@@ -18,7 +18,7 @@
         <dependency>
             <groupId>io.github.plovdev</groupId>
             <artifactId>keyer</artifactId>
-            <version>1.8-stable</version>
+            <version>1.8</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

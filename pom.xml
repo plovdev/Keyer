@@ -7,7 +7,7 @@
     <groupId>io.github.plovdev</groupId>
     <artifactId>keyer</artifactId>
     <name>Keyer</name>
-    <version>1.8-stable</version>
+    <version>1.8</version>
     <description>Keyer - Lightweight Native Keychain Access for Java</description>
     <url>https://github.com/plovdev/Keyer</url>
 
