@@ -30,6 +30,9 @@ public final class UnixNativeUtils {
     private static final String BASE_SCHEMA_NAME = Keychain.class.getPackageName();
     private static final String[] POSSIBLE_LIBSECRET_PATHS = {"libsecret-1.so", "libsecret-1.so.0", "libsecret-1.so.0.0.0", "/usr/lib/libsecret-1.so", "/usr/lib/x86_64-linux-gnu/libsecret-1.so", "/usr/lib/x86_64-linux-gnu/libsecret-1.so.0", "/usr/lib/x86_64-linux-gnu/libsecret-1.so.0.0.0", "/usr/lib64/libsecret-1.so", "/usr/lib/aarch64-linux-gnu/libsecret-1.so"};
 
+    static final Arena ARENA = Arena.ofShared();
+    static final SymbolLookup SECRET = UnixNativeUtils.loadLibrary();
+
     //====ERROR CODES====\\
     // private static final int SECRET_ERROR_PROTOCOL = 1;
     static final int SECRET_IS_LOCKED = 2;
@@ -51,15 +54,14 @@ public final class UnixNativeUtils {
      *     <li>Distribution-specific paths (/usr/lib/, /usr/lib64/, /usr/lib/x86_64-linux-gnu/, etc.)</li>
      * </ul>
      *
-     * @param arena memory arena for library lifetime management
      * @return SymbolLookup for libsecret
      * @throws UnsatisfiedLinkError if libsecret cannot be loaded from any known path
      */
-    static @NonNull SymbolLookup loadLibrary(Arena arena) {
+    static @NonNull SymbolLookup loadLibrary() {
         SymbolLookup lookup = null;
         for (String path : POSSIBLE_LIBSECRET_PATHS) {
             try {
-                lookup = SymbolLookup.libraryLookup(path, arena);
+                lookup = SymbolLookup.libraryLookup(path, UnixNativeUtils.ARENA);
                 break;
             } catch (Exception e) {
                 log.error("Failed to load libsecret from {}:", path, e);

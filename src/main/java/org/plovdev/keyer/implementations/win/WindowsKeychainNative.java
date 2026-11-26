@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
+import static org.plovdev.keyer.utils.NativeUtils.LINKER;
 import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**
@@ -79,6 +80,9 @@ public final class WindowsKeychainNative {
     private static final long CRED_BLOB_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob"));
     private static final long PERSIST_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Persist"));
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private WindowsKeychainNative() {
         throw new UnsupportedOperationException();
     }

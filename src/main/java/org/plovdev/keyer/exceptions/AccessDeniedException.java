@@ -16,21 +16,49 @@ package org.plovdev.keyer.exceptions;
  * @since 1.6
  */
 public class AccessDeniedException extends KeyerException {
+    /**
+     * Constructs a new AccessDeniedException with no detail message.
+     */
     public AccessDeniedException() {
     }
 
+    /**
+     * Constructs a new AccessDeniedException with the specified detail message.
+     *
+     * @param message the detail message
+     */
     public AccessDeniedException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new AccessDeniedException with the specified detail message and cause.
+     *
+     * @param message the detail message
+     * @param cause   the underlying cause
+     */
     public AccessDeniedException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructs a new AccessDeniedException with the specified cause.
+     *
+     * @param cause the underlying cause
+     */
     public AccessDeniedException(Throwable cause) {
         super(cause);
     }
 
+    /**
+     * Constructs a new AccessDeniedException with the specified detail message, cause,
+     * suppression control, and writable stack trace control.
+     *
+     * @param message            the detail message
+     * @param cause              the underlying cause
+     * @param enableSuppression  whether suppression is enabled
+     * @param writableStackTrace whether the stack trace is writable
+     */
     public AccessDeniedException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }

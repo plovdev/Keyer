@@ -53,7 +53,17 @@ public final class MacOsNativeUtils {
         throw new UnsupportedOperationException();
     }
 
-
+    /**
+     * Creates a native SecAccessControl object requiring the specified access method.
+     *
+     * @param arena         the arena used to allocate native memory
+     * @param controlCreate the native SecAccessControlCreateWithFlags function handle
+     * @param whenUnlocked  the accessibility constant the control is bound to
+     * @param method        the access control flags (e.g., biometrics or device passcode)
+     * @return a pointer to the created SecAccessControlRef as a {@link MemorySegment}
+     * @throws KeyerException if the native SecAccessControl object cannot be created
+     * @throws Throwable      if a native call fails
+     */
     static @NonNull MemorySegment createAccessControl(@NonNull Arena arena, @NonNull MethodHandle controlCreate, MemorySegment whenUnlocked, long method) throws Throwable {
         var errorPtr = arena.allocate(ValueLayout.ADDRESS);
         MemorySegment result = (MemorySegment) controlCreate.invokeExact(MemorySegment.NULL, whenUnlocked, method, errorPtr);
@@ -84,6 +94,15 @@ public final class MacOsNativeUtils {
         }
     }
 
+    /**
+     * Creates a native CFString object from a Java string using UTF-16LE encoding.
+     *
+     * @param arena the arena used to allocate native memory
+     * @param str   the Java string to convert
+     * @return a pointer to the created CFStringRef as a {@link MemorySegment}
+     * @throws KeyerException if the native CFString object cannot be created
+     * @throws Throwable      if a native call fails
+     */
     static @NonNull MemorySegment createCFString(@NonNull Arena arena, @NonNull String str) throws Throwable {
         MemorySegment chars = arena.allocateFrom(str, StandardCharsets.UTF_16LE);
         MemorySegment ref = (MemorySegment) CF_STR_CREATE.invokeExact(MemorySegment.NULL, chars, (long) str.length());
@@ -91,6 +110,16 @@ public final class MacOsNativeUtils {
         return ref;
     }
 
+    /**
+     * Creates a native CFDictionary object from the given keys and values.
+     *
+     * @param arena  the arena used to allocate native memory
+     * @param keys   the array of dictionary keys
+     * @param values the array of dictionary values
+     * @return a pointer to the created CFDictionaryRef as a {@link MemorySegment}
+     * @throws KeyerException if the native CFDictionary object cannot be created
+     * @throws Throwable      if a native call fails
+     */
     static @NonNull MemorySegment createDict(@NonNull Arena arena, MemorySegment @NonNull [] keys, MemorySegment @NonNull [] values) throws Throwable {
         var keysPtr = arena.allocate(ValueLayout.ADDRESS, keys.length);
         var valsPtr = arena.allocate(ValueLayout.ADDRESS, values.length);
@@ -104,6 +133,13 @@ public final class MacOsNativeUtils {
         return dict;
     }
 
+    /**
+     * Releases native CoreFoundation objects.
+     * <p>
+     * Null pointers are safely ignored.
+     *
+     * @param toClear the native objects to release
+     */
     static void executeClear(MemorySegment @NonNull ... toClear) {
         for (MemorySegment segment : toClear) {
             try {

@@ -26,6 +26,9 @@ public final class CharactersUtils {
 
     /**
      * Converts a char array to a UTF-8 byte array.
+     *
+     * @param chars the characters to encode
+     * @return the encoded bytes
      */
     public static byte @NonNull [] charsUTF_8ToBytes(char[] chars) {
         ByteBuffer bb = StandardCharsets.UTF_8.encode(CharBuffer.wrap(chars));
@@ -36,6 +39,9 @@ public final class CharactersUtils {
 
     /**
      * Converts a UTF-8 byte array to a char array.
+     *
+     * @param bytes the bytes to decode
+     * @return the decoded characters
      */
     public static char @NonNull [] bytesToCharsUTF_8(byte[] bytes) {
         CharBuffer cb = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes));
@@ -46,6 +52,9 @@ public final class CharactersUtils {
 
     /**
      * Converts a char array to a UTF-16LE byte array.
+     *
+     * @param chars the characters to encode
+     * @return the encoded bytes
      */
     public static byte @NonNull [] charsUTF_16LEToBytes(char[] chars) {
         ByteBuffer bb = StandardCharsets.UTF_16LE.encode(CharBuffer.wrap(chars));
@@ -56,6 +65,9 @@ public final class CharactersUtils {
 
     /**
      * Converts a UTF-16LE byte array to a char array.
+     *
+     * @param bytes the bytes to decode
+     * @return the decoded characters
      */
     public static char @NonNull [] bytesToCharsUTF_16LE(byte[] bytes) {
         CharBuffer cb = StandardCharsets.UTF_16LE.decode(ByteBuffer.wrap(bytes));

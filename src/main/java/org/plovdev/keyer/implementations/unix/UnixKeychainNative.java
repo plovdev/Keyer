@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import static org.plovdev.keyer.implementations.unix.UnixNativeUtils.*;
+import static org.plovdev.keyer.utils.NativeUtils.LINKER;
 import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**
@@ -28,16 +29,12 @@ public final class UnixKeychainNative {
     private static final Logger log = LoggerFactory.getLogger(UnixKeychainNative.class);
     private static final String SCHEMA_NAME = UnixNativeUtils.determineSchemaName();
 
-    private static final Arena SHARED = Arena.ofAuto();
-    private static final Linker LINKER = Linker.nativeLinker();
-    private static final SymbolLookup SECRET = UnixNativeUtils.loadLibrary(SHARED);
-
     // Function descriptors for libsecret API
     private static final MethodHandle SECRET_PASSWORD_LOOKUP_SYNC = findFunction(SECRET, LINKER, "secret_password_lookup_sync", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_PASSWORD_STORE_SYNC = findFunction(SECRET, LINKER, "secret_password_store_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_PASSWORD_CLEAR_SYNC = findFunction(SECRET, LINKER, "secret_password_clear_sync", FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     private static final MethodHandle SECRET_SCHEMA_NEW = findFunction(SECRET, LINKER, "secret_schema_new", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    private static final MethodHandle G_FREE = findFunction(SymbolLookup.libraryLookup("libglib-2.0.so", SHARED), LINKER, "g_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    private static final MethodHandle G_FREE = findFunction(SymbolLookup.libraryLookup("libglib-2.0.so", ARENA), LINKER, "g_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     private static final MemorySegment schemaRef;
 
@@ -47,12 +44,15 @@ public final class UnixKeychainNative {
     */
     static {
         try {
-            schemaRef = (MemorySegment) SECRET_SCHEMA_NEW.invokeExact(SHARED.allocateFrom(SCHEMA_NAME), 0, MemorySegment.NULL);
+            schemaRef = (MemorySegment) SECRET_SCHEMA_NEW.invokeExact(ARENA.allocateFrom(SCHEMA_NAME), 0, MemorySegment.NULL);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private UnixKeychainNative() {
         throw new UnsupportedOperationException();
     }
@@ -89,7 +89,7 @@ public final class UnixKeychainNative {
      * @param app   the service name
      * @param alias the account name
      * @return password as byte array, or {@code null} if not found
-     * @throws KeyerException if a native call fails unexpectedly
+     * @throws KeyerException if a native call fails
      */
     public static synchronized byte @Nullable [] getRawPassword(String app, String alias) {
         Objects.requireNonNull(app);

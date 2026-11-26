@@ -14,8 +14,7 @@ import java.util.Optional;
 import static java.lang.foreign.MemorySegment.NULL;
 import static java.lang.foreign.ValueLayout.*;
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
-import static org.plovdev.keyer.utils.NativeUtils.findFunction;
-import static org.plovdev.keyer.utils.NativeUtils.findVarHandle;
+import static org.plovdev.keyer.utils.NativeUtils.*;
 
 /**
  * Utility for showing the native Windows password input dialog.

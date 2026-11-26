@@ -12,6 +12,9 @@ import org.plovdev.keyer.AuthorizationMethod;
  * @since 1.8-beta
  */
 public class UnsupportedAuthorizationMethodException extends UnsupportedOperationException {
+    /**
+     * The unsupported authorization method, or {@code null} if not specified.
+     */
     private AuthorizationMethod method;
 
     /**

@@ -16,6 +16,9 @@ import java.util.NoSuchElementException;
  * @since 1.0
  */
 public final class NativeUtils {
+    /**
+     * The native linker used for all downcall handles.
+     */
     public static final Linker LINKER = Linker.nativeLinker();
 
     /**

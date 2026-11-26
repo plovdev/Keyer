@@ -15,6 +15,7 @@ import java.util.Arrays;
 
 import static java.lang.foreign.ValueLayout.*;
 import static org.plovdev.keyer.implementations.win.WindowsNativeUtils.*;
+import static org.plovdev.keyer.utils.NativeUtils.LINKER;
 import static org.plovdev.keyer.utils.NativeUtils.findFunction;
 
 /**

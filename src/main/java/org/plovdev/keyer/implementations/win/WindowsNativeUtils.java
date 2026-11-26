@@ -8,8 +8,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
 
-import static org.plovdev.keyer.utils.NativeUtils.findFunction;
-import static org.plovdev.keyer.utils.NativeUtils.findVarHandle;
+import static org.plovdev.keyer.utils.NativeUtils.*;
 
 /**
  * Low-level native utilities for Windows Credential Manager access.
@@ -25,7 +24,6 @@ import static org.plovdev.keyer.utils.NativeUtils.findVarHandle;
  */
 public final class WindowsNativeUtils {
     static final Arena SHARED = Arena.ofAuto();
-    static final Linker LINKER = Linker.nativeLinker();
     static final SymbolLookup ADVAPI32 = SymbolLookup.libraryLookup("Advapi32", SHARED);
     static final SymbolLookup KERNEL32 = SymbolLookup.libraryLookup("Kernel32", SHARED);
     static final SymbolLookup OLE32 = SymbolLookup.libraryLookup("Ole32", SHARED);

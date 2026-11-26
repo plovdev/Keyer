@@ -59,10 +59,13 @@ public final class MacOsKeychainNative {
     private static final MemorySegment ACCESSIBLE = findConstant(SECURITY, "kSecAttrAccessible");
     private static final MemorySegment ACCESSIBLE_WHEN_UNLOCKED = findConstant(SECURITY, "kSecAttrAccessibleWhenUnlockedThisDeviceOnly");
     private static final long ACCESS_CONTROL_BIOMETRY_CURRENT_SET = 1L << 3;
-    private static final long ACCESS_CONTROL_DEVICE_PASSCODE      = 1L << 4;
+    private static final long ACCESS_CONTROL_DEVICE_PASSCODE = 1L << 4;
 
     private static final MemorySegment ACCESS_CONTROL = findConstant(SECURITY, "kSecAttrAccessControl");
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private MacOsKeychainNative() {
         throw new UnsupportedOperationException();
     }
