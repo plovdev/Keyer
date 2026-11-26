@@ -20,14 +20,14 @@
 <dependency>
     <groupId>io.github.plovdev</groupId>
     <artifactId>keyer</artifactId>
-    <version>1.8-beta</version> <!-- Latest version -->
+    <version>1.8-stable</version> <!-- Latest version -->
 </dependency>
 ```
 
 И Gradle:
 
 ```groovy
-implementation("io.github.plovdev:keyer:1.8-beta")
+implementation("io.github.plovdev:keyer:1.8-stable")
 ```
 
 ## Быстрый старт
@@ -96,7 +96,7 @@ public class KeyerEncodingTest {
 При получении пароля из [WCM](https://support.microsoft.com/ru-ru/windows/security/credential-manager-in-windows)
 произойдет проверка и пользователя попросят ввести пароль от его учетки.
 
-### MacOS
+### macOS
 
 В mac-реализации были **проведены улучшения** в работе с методами авторизации, но там своя специфика, и без платных
 `entitlement` **я не могу нормально протестить**.
@@ -116,8 +116,8 @@ public class KeyerEncodingTest {
 Keyer тестируется через GitHub Actions при каждом пуше в тег.
 Тестируются следующие платформы:
 
-- macOs 15
-- macOs 26
+- macOS 15
+- macOS 26
 - Windows Server 2022
 - Windows Server 2025
 - Windows 11
@@ -128,7 +128,7 @@ Keyer тестируется через GitHub Actions при каждом пу�
 
 Локально тестируется на реальном железе:
 
-- macOs 10.15
+- macOS 10.15
 - Windows 10
 - Windows 11
 
