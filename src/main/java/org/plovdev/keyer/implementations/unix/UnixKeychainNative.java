@@ -53,6 +53,10 @@ public final class UnixKeychainNative {
         }
     }
 
+    private UnixKeychainNative() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Retrieves a password as a char array.
      * <p>

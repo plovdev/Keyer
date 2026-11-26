@@ -45,6 +45,6 @@ public class KeyerExample {
         byte[] password = keychain.getRawPassword(alias);
 
         // 4. Log the result
-        log.info("Getted password: {}", new String(Objects.requireNonNull(password)));
+        log.info("Retrieved password: {}", new String(Objects.requireNonNull(password)));
     }
 }

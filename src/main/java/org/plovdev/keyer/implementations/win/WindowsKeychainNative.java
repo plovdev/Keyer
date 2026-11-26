@@ -79,6 +79,10 @@ public final class WindowsKeychainNative {
     private static final long CRED_BLOB_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("CredentialBlob"));
     private static final long PERSIST_OFFSET = CREDENTIAL_LAYOUT.byteOffset(MemoryLayout.PathElement.groupElement("Persist"));
 
+    private WindowsKeychainNative() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Retrieves a password as a char array.
      * <p>

@@ -63,6 +63,10 @@ public final class MacOsKeychainNative {
 
     private static final MemorySegment ACCESS_CONTROL = findConstant(SECURITY, "kSecAttrAccessControl");
 
+    private MacOsKeychainNative() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Retrieves a password as a char array.
      * <p>

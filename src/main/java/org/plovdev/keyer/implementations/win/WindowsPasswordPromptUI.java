@@ -95,6 +95,7 @@ public final class WindowsPasswordPromptUI {
      * Private constructor to prevent instantiation.
      */
     private WindowsPasswordPromptUI() {
+        throw new UnsupportedOperationException();
     }
 
     /**
